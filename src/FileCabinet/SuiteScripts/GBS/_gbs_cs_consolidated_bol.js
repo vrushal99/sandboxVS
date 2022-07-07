@@ -51,7 +51,7 @@
         fieldId: "custpage_subitem_mark",
         line: y
       });
-      //alert('mark: ' + mark);
+      //alert('mark: ' + mark); 
       if (mark == true) {
 
         var weight = rec.getSublistValue({
