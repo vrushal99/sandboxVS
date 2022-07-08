@@ -4,27 +4,6 @@
  * @NModuleScope SameAccount
  */
 
-// BEGIN SCRIPT DESCRIPTION BLOCK ==================================
-{
-  /*
-  Script Name: UE_MCR_sendEmail
-  Author: Sonali
-  Company: Blue flame labs
-  Date: 27-05-2022
-
-  Script Modification Log:
-  
-  
-  
-  -- version-- -- Date -- -- Modified By -- --Requested By-- -- Description --
-  1.0 27-05-2022 Sonali Aditya khatri Email sent to technicians
-  
-  
-  
-  */
-}
-// END SCRIPT DESCRIPTION BLOCK ====================================
-
 define([
   "N/record",
   "N/runtime",
@@ -33,13 +12,22 @@ define([
   "N/render",
   "N/file",
   "N/xml",
-  "N/url"
+  "N/url",
 ], /**
  * @param {record} record
  * @param {runtime} runtime
  * @param {search} search
  * @param {serverWidget} serverWidget
- */ function (record, runtime, search, serverWidget, render, file, xml, url) {
+ */ function (
+  record,
+  runtime,
+  search,
+  serverWidget,
+  render,
+  file,
+  xml,
+  url,
+) {
   /**
    * Definition of the Suitelet script trigger point.
    *
@@ -63,13 +51,14 @@ define([
           _logValidation(parameters.custpage_array_of_tabs)
         ) {
           var postDataCon = getSublistDataPDF(parameters, context, true);
-          //log.debug("postDataCon", postDataCon);
+          //log.debug('postDataCon', postDataCon)
           var URL = printBOLConsolidated(postDataCon, context);
-          //log.debug("URL", URL);
+          //log.debug('URL', URL)
           URL = renderConsolidatedPDFNum(URL, context, 1);
           context.response.write(
             `<html><head><script>window.open("${URL}")</script></head></html>`
           );
+
           context.response.write(
             `<html><head><script>window.location.href = '${output}'</script></head></html>`
           );
@@ -78,9 +67,7 @@ define([
           _logValidation(parameters.custpage_array_of_tabs)
         ) {
           var postDataSin = getSublistDataPDF(parameters, context, false);
-          //log.debug("postDataSin", postDataSin);
           var URL = printBOLSinglePdf(postDataSin);
-          //log.debug('URL',URL)
           URL = renderConsolidatedPDFNum(URL, context, 2);
           URL.forEach((x) => {
             context.response.write(
@@ -96,7 +83,6 @@ define([
         ) {
           var postDataCon = getSublistDataPDF(parameters, context, true);
           var postDataSin = getSublistDataPDF(parameters, context, false);
-          //log.debug("postDataSin", postDataSin);
           postDataSin.markedDataSinglePDFArr.push(
             postDataCon.markedDataConsolidateArr
           );
@@ -119,26 +105,28 @@ define([
     }
   }
 
-  function makeSuiteLetUrl(parameters) {
-    var suiteletURL = url.resolveScript({
-      scriptId: "customscript_gbs_consolidated_bol",
-      deploymentId: "customdeploy_gbs_consolidated_bol",
-      params: {
-        custpage_startdate: parameters.custpage_startdate,
-        custpage_enddate: parameters.custpage_enddate,
-        custpage_customer: parameters.custpage_customer,
-        custpage_total_cubage: parameters.custpage_cubage,
-        custpage_total_weight: parameters.custpage_total_weight
-      }
-    });
+   function makeSuiteLetUrl(parameters) {
+     var suiteletURL = url.resolveScript({
+       scriptId: "customscript_gbs_consolidated_bol",
+       deploymentId: "customdeploy_gbs_consolidated_bol",
+       params: {
+         custpage_startdate: parameters.custpage_startdate,
+         custpage_enddate: parameters.custpage_enddate,
+         custpage_customer: parameters.custpage_customer,
+         custpage_total_cubage: parameters.custpage_cubage,
+         custpage_total_weight: parameters.custpage_total_weight,
+         custpage_carrier_ship: parameters.custpage_carrier_ship,
+       
+       }
+     });
 
-    let output = url.resolveDomain({
-      hostType: url.HostType.APPLICATION
-    });
+     let output = url.resolveDomain({
+       hostType: url.HostType.APPLICATION
+     });
 
-    output = "https://" + output + suiteletURL;
-    return output;
-  }
+     output = "https://" + output + suiteletURL;
+     return output;
+   }
 
   function getSublistDataPDF(parameters, context, consolidated) {
     var totalWeight = 0;
@@ -162,15 +150,6 @@ define([
           name: "custpage_subitem_mark",
           line: y
         });
-        var weight = context.request.getSublistValue({
-          group: sublist,
-          name: "custpage_subitem_weight",
-          line: y
-        });
-        if (weight) {
-          weight = parseFloat(weight).toFixed(2);
-        }
-        log.debug("weight", weight);
         if (mark == "T") {
           markedDataConsolidateArr.push({
             isConsolidated: true,
@@ -199,7 +178,11 @@ define([
               name: "custpage_subitem_quantity",
               line: y
             }),
-            custpage_subitem_weight: weight,
+            custpage_subitem_weight: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_weight",
+              line: y
+            }),
             custpage_subitem_cubage: context.request.getSublistValue({
               group: sublist,
               name: "custpage_subitem_cubage",
@@ -238,7 +221,11 @@ define([
               name: "custpage_subitem_quantity",
               line: y
             }),
-            custpage_subitem_weight: weight,
+            custpage_subitem_weight: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_weight",
+              line: y
+            }),
             custpage_subitem_cubage: context.request.getSublistValue({
               group: sublist,
               name: "custpage_subitem_cubage",
@@ -256,9 +243,6 @@ define([
             name: "custpage_subitem_weight",
             line: y
           });
-          if (weight) {
-            weight = parseFloat(weight).toFixed(2);
-          }
           var cubage = context.request.getSublistValue({
             group: sublist,
             name: "custpage_subitem_totalcubage",
@@ -308,6 +292,15 @@ define([
     masterData.nmfcValue = parameters.custpage_nmfc;
     masterData.locationsps = parameters.custpage_location_sps;
     masterData.palletValue = parameters.custpage_pallets || 0;
+    masterData.trailerNumber = parameters.custpage_trailer_number;
+    masterData.sealNumber = parameters.custpage_seal_number;
+    masterData.specialInstructions = parameters.custpage_special_instructions;
+    masterData.billToName = parameters.custpage_billtoname;
+    masterData.billToAddress = parameters.custpage_billtoaddress;
+    masterData.billToCity = parameters.custpage_billtocity;
+    masterData.billToState = parameters.custpage_billtostate;
+    masterData.billToZip = parameters.custpage_billtozip;
+
 
     return masterData;
   }
@@ -325,7 +318,7 @@ define([
           data: iterator
         });
         var bol = renderer.renderAsPdf();
-        bol.folder = 2244;
+        bol.folder = 78804;
         bol.name = "samplepdf" + count;
         bol.isOnline = true;
         // log.debug("bol", bol);
@@ -344,7 +337,7 @@ define([
         var pdfFinal = renderSet({ files: fileArray });
         pdfFinal.name = "sampleva" + "_" + ".pdf";
         pdfFinal.isOnline = true;
-        pdfFinal.folder = 2244;
+        pdfFinal.folder = 78804;
         let fileId = pdfFinal.save();
         pdfFinal = file.load(fileId);
         output = "https://" + output + pdfFinal.url;
@@ -403,7 +396,9 @@ define([
         custpage_enddate: parameters.custpage_enddate,
         custpage_customer: parameters.custpage_customer,
         custpage_total_cubage: parameters.custpage_cubage,
-        custpage_total_weight: parameters.custpage_total_weight
+        custpage_total_weight: parameters.custpage_total_weight,
+        custpage_carrier_ship: parameters.custpage_carrier_ship,
+     
       };
 
       var form = serverWidget.createForm({
@@ -414,23 +409,34 @@ define([
 
       var {
         arrayoftabs,
-        shipFrom,
-        location,
-        proNumber,
-        scac,
-        shipToName,
-        shipToAddress,
-        shipToCity,
-        shipToState,
-        shipToZip,
-        shipToCID,
-        nmfc,
-        pallets,
-        locationSPS,
-        shipTofob,
-        shipFromfob,
-        carrier,
-        frieghtChargeTerms
+      shipFrom,
+      location,
+      proNumber,
+      scac,
+      shipToName,
+      shipToAddress,
+      shipToCity,
+      shipToState,
+      shipToZip,
+      shipToCID,
+      nmfc,
+      pallets,
+      locationSPS,
+      shipTofob,
+      shipFromfob,
+      carrier,
+      frieghtChargeTerms,
+      cubageCalculation,
+      shipToSelect,
+      billToSelect,
+      billToName,
+      billToAddress,
+      billToCity,
+      billToState,
+      billToZip,
+      sealNumber,
+      trailerNumber,
+      specialInstructions
       } = addBodyFields(form);
 
       form.addSubmitButton({
@@ -459,29 +465,41 @@ define([
             addTabbedSublist(form, formatted)
           );
         }
-        shipFromLocation(parameters, shipFrom, location);
-        addSpsFields(
-          parameters,
-          proNumber,
-          scac,
-          nmfc,
-          pallets,
-          locationSPS,
-          shipTofob,
-          shipFromfob,
-          carrier
-        );
-        shipToLocation(
-          parameters,
-          shipToName,
-          shipToAddress,
-          shipToCity,
-          shipToState,
-          shipToZip,
-          shipToCID,
-          frieghtChargeTerms
-        );
+        shipFromLocation(parameters, shipFrom, location,cubageCalculation);
+
+     
       }
+
+      
+      billToAddressSelect(parameters, billToSelect, billToName, billToAddress, billToCity, billToState, billToZip);
+
+
+      shipToLocation(
+        parameters,
+        shipToName,
+        shipToAddress,
+        shipToCity,
+        shipToState,
+        shipToZip,
+        shipToCID,
+        frieghtChargeTerms,
+        shipToSelect
+      );
+      
+      addSpsFields(
+        parameters,
+        proNumber,
+        scac,
+        nmfc,
+        pallets,
+        locationSPS,
+        shipTofob,
+        shipFromfob,
+        carrier,
+        sealNumber,
+        trailerNumber,
+        specialInstructions
+      );
 
       return form;
     } catch (e) {
@@ -585,10 +603,26 @@ define([
       container: "custpage_fg_1"
     });
 
+   var cubageCalculation = form.addField({
+      id: "custpage_cubage_calculation",
+      type: serverWidget.FieldType.TEXT,
+      label: "Cubage Calculation",
+      container: "custpage_fg_1"
+    });
+
     form.addFieldGroup({
       id: "custpage_fg_2",
       label: "Ship To Address"
     });
+
+    var shipToSelect = form.addField({
+      id: "custpage_ship_to_select",
+      type: serverWidget.FieldType.SELECT,
+      label: "Ship To Select",
+      container: "custpage_fg_2"
+    }); //updated
+
+
 
     var shipToName = form.addField({
       id: "custpage_shiptoname",
@@ -641,10 +675,64 @@ define([
 
     var carrier = form.addField({
       id: "custpage_carrier_ship",
-      type: serverWidget.FieldType.TEXT,
-      label: "Carrier",
+      type: serverWidget.FieldType.SELECT,
+      label: "Shipping Method",
       container: "custpage_fg_2"
+    });//updated
+
+    carrier.addSelectOption({
+      value: '',
+      text: ''
     });
+
+    form.addFieldGroup({
+      id: "custpage_fg_4",
+      label: "Bill To Address"
+    });
+
+    var billToSelect = form.addField({
+      id: "custpage_bill_to_select",
+      type: serverWidget.FieldType.SELECT,
+      label: "Bill To Select",
+      container: "custpage_fg_4"
+    }); //updated
+
+    var billToName = form.addField({
+      id: "custpage_billtoname",
+      type: serverWidget.FieldType.TEXT,
+      label: "Name",
+      container: "custpage_fg_4"
+    });
+
+    var billToAddress = form.addField({
+      id: "custpage_billtoaddress",
+      type: serverWidget.FieldType.TEXT,
+      label: "Address",
+      container: "custpage_fg_4"
+    });
+
+    var billToCity = form.addField({
+      id: "custpage_billtocity",
+      type: serverWidget.FieldType.TEXT,
+      label: "City",
+      container: "custpage_fg_4"
+    });
+
+    var billToState = form.addField({
+      id: "custpage_billtostate",
+      type: serverWidget.FieldType.TEXT,
+      label: "State",
+      container: "custpage_fg_4"
+    });
+
+    var billToZip = form.addField({
+      id: "custpage_billtozip",
+      type: serverWidget.FieldType.TEXT,
+      label: "Zip",
+      container: "custpage_fg_4"
+    });
+
+
 
     form.addFieldGroup({
       id: "custpage_fg_3",
@@ -685,6 +773,28 @@ define([
       label: "# Pallets",
       container: "custpage_fg_3"
     });
+
+    var sealNumber = form.addField({
+      id: "custpage_seal_number",
+      type: serverWidget.FieldType.TEXT,
+      label: "Seal Number",
+      container: "custpage_fg_3"
+    });
+
+    var trailerNumber = form.addField({
+      id: "custpage_trailer_number",
+      type: serverWidget.FieldType.TEXT,
+      label: "Trailer Number",
+      container: "custpage_fg_3"
+    });
+
+    var specialInstructions = form.addField({
+      id: "custpage_special_instructions",
+      type: serverWidget.FieldType.TEXTAREA,
+      label: "Special Instructions",
+      container: "custpage_fg_3"
+    });
+
     var frieghtChargeTerms = form.addField({
       id: "custpage_fright_charge_terms",
       type: serverWidget.FieldType.SELECT,
@@ -727,9 +837,52 @@ define([
       shipTofob,
       shipFromfob,
       carrier,
-      frieghtChargeTerms
+      frieghtChargeTerms,
+      cubageCalculation,
+      shipToSelect,
+      billToSelect,
+      billToName,
+      billToAddress,
+      billToCity,
+      billToState,
+      billToZip,
+      sealNumber,
+      trailerNumber,
+      specialInstructions
     };
   }
+
+
+  function billToAddressSelect(parameters, billToSelect, billToName, billToAddress, billToCity, billToState, billToZip) {
+
+    let billToSelectValue = parameters.custpage_bill_to_select;
+    let billToNameValue = parameters.custpage_billtoname;
+    let billToAddressValue = parameters.custpage_billtoaddress;
+    let billToCityValue = parameters.custpage_billtocity;
+    let billToStateValue = parameters.custpage_billtostate;
+    let billToZipValue = parameters.custpage_billtozip;
+
+
+    if (billToSelectValue) {
+      billToSelect.defaultValue = billToSelectValue;
+    }
+    if (billToNameValue) {
+      billToName.defaultValue = billToNameValue;
+    }
+    if (billToAddressValue) {
+      billToAddress.defaultValue = billToAddressValue;
+    }
+    if (billToCityValue) {
+      billToCity.defaultValue = billToCityValue;
+    }
+    if (billToStateValue) {
+      billToState.defaultValue = billToStateValue;
+    }
+    if (billToZipValue) {
+      billToZip.defaultValue = billToZipValue;
+    }
+  }
+
 
   function addSpsFields(
     parameters,
@@ -740,7 +893,10 @@ define([
     locationSPS,
     shipTofob,
     shipFromfob,
-    carrier
+    carrier,
+    sealNumber,
+    trailerNumber,
+    specialInstructions
   ) {
     let proNumberValue = parameters.custpage_pro_number;
     let scacValue = parameters.custpage_scac;
@@ -749,14 +905,22 @@ define([
     let locationSPSVal = parameters.custpage_location_sps;
     let shipTofobVal = parameters.custpage_shiptofob;
     let shipFromfobVal = parameters.custpage_shipfrom_fob;
-    let Value = parameters.custpage_master_checkbox;
-    let carrierVal = parameters.custpage_carrier_ship;
+    let sealNumberVal = parameters.custpage_seal_number;
+    let trailerNumberVal = parameters.custpage_trailer_number;
+    let specialInstructionsVal = parameters.custpage_special_instructions;
 
+
+    if(sealNumberVal){
+      sealNumber.defaultValue = sealNumberVal;
+    }
+    if(trailerNumberVal){
+      trailerNumber.defaultValue = trailerNumberVal;
+    }
+    if(specialInstructionsVal){
+      specialInstructions.defaultValue = specialInstructionsVal;
+    }
     if (proNumberValue) {
       proNumber.defaultValue = proNumberValue;
-    }
-    if (carrierVal) {
-      carrier.defaultValue = carrierVal;
     }
     if (shipTofobVal) {
       shipTofob.defaultValue = shipTofobVal;
@@ -778,6 +942,32 @@ define([
     if (pallets) {
       pallets.defaultValue = palletsValue;
     }
+
+    var shipitemSearchObj = search.create({
+      type: "shipitem",
+      filters:
+      [
+         ["isinactive","is","F"]
+      ],
+      columns:
+      [
+         search.createColumn({name: "internalid", label: "Internal ID"}),
+         search.createColumn({
+            name: "itemid",
+            sort: search.Sort.ASC,
+            label: "Name"
+         })
+      ]
+   });
+
+    var shipitemSearchResults = shipitemSearchObj.run().getRange(0, 1000);
+
+    for(let i = 0; i < shipitemSearchResults.length; i++){
+      carrier.addSelectOption({
+        value: shipitemSearchResults[i].getValue({name: "itemid"}),
+        text: shipitemSearchResults[i].getValue({name: "itemid"})
+      });
+    }
   }
 
   function shipToLocation(
@@ -788,7 +978,8 @@ define([
     shipToState,
     shipToZip,
     shipToCID,
-    frieghtChargeTerms
+    frieghtChargeTerms,
+    shipToSelect
   ) {
     let shipToNameValue = parameters.custpage_shiptoname;
     let shipToAddressValue = parameters.custpage_shiptoaddress;
@@ -796,8 +987,12 @@ define([
     let shipToStateValue = parameters.custpage_shiptostate;
     let shipToZipValue = parameters.custpage_shiptozip;
     let shipToCIDValue = parameters.custpage_shiptocid;
+    let shipToSelectValue = parameters.custpage_ship_to_select; //updated
     let frieghtVal = parameters.custpage_fright_charge_terms;
 
+    if(shipToSelectValue){
+      shipToSelect.defaultValue = shipToSelectValue;
+    }
     if (shipToNameValue) {
       shipToName.defaultValue = shipToNameValue;
     }
@@ -824,9 +1019,21 @@ define([
     if (shipToCIDValue) {
       shipToCID.defaultValue = shipToCIDValue;
     }
+
+   
+
+
+       
   }
 
-  function shipFromLocation(parameters, shipFrom, location) {
+  function shipFromLocation(parameters, shipFrom, location,cubageCalculation) {
+
+    let cusbageCalculationValue = parameters.custpage_cubage_calculation;
+
+    if(cusbageCalculationValue){
+      cubageCalculation.defaultValue = cusbageCalculationValue;
+    }
+
     let getLocation = parameters.custpage_location;
 
     if (_logValidation(getLocation)) {
@@ -947,7 +1154,7 @@ define([
 
   function printBOLSinglePdf(markedData) {
     try {
-      //log.debug("markedData", markedData);
+      log.debug("markedData", markedData);
       var arrayOfURL = [];
       var count = 0;
       let {
@@ -959,7 +1166,7 @@ define([
         phoneOnSubRecord
       } = shipAddressLocation(markedData);
       let val = markedData.markedDataSinglePDFArr;
-      //log.debug("val", val);
+      // log.debug("val", val);
       for (var x of val) {
         //log.debug({ title: "x", details: x });
         let checkIfConsolidated = x[0].isConsolidated;
@@ -1042,11 +1249,7 @@ define([
     for (let f = 0; f < x.length; f++) {
       let itemFullId = x[f].custpage_subitem_itemid;
       let itemWeight = parseFloat(x[f].custpage_subitem_weight);
-      if (itemWeight) {
-        itemWeight = itemWeight.toFixed(2);
-      }
-
-      log.debug(`itemWeight ${itemFullId}`, itemWeight);
+      //log.debug(`itemWeight ${itemFullId}`, itemWeight);
 
       var found = spsDataArr.findIndex(function (element) {
         return element.itemFullId == itemFullId;
@@ -1099,12 +1302,13 @@ define([
           id: itemFullId
         });
         let getPkgCount = loadItemFullRecord.getLineCount({
-          sublistId: "recmachcustrecord_sps_pack_asn"
+          sublistId: 'package'
+          // sublistId: "recmachcustrecord_sps_pack_asn"
         });
         //log.debug('getPkgCount', getPkgCount);
         let poType = getSpsValues.custbody_sps_potype;
         // log.debug("poType", poType);
-
+  
         let department = getSpsValues.custbody_sps_department;
         // log.debug("department", department);
         totalPkgCount = totalPkgCount + getPkgCount;
@@ -1123,11 +1327,9 @@ define([
       } else {
         let obj = spsDataArr[found];
         obj.itemWeight = parseFloat(obj.itemWeight) + parseFloat(itemWeight);
-        x[found].custpage_subitem_weight = obj.itemWeight.toFixed(2);
-        log.debug(`itemWeight ${itemFullId}`, itemWeight);
+        x[found].custpage_subitem_weight = obj.itemWeight;
       }
     }
-
     //log.debug("End processLineLevelData...");
     return { shipToLocationNum, bolNumber, totalPkgCount };
   }
@@ -1147,7 +1349,7 @@ define([
   ) {
     fields["tranid"] = 10001;
     fields["shipmethod"] = markedData.carrier;
-    fields["frieghtChargeTerms"] = markedData.frieghtChargeTerms;
+    fields["frieghtChargeTerms"] = markedData.frieghtChargeTerms;    
     fields["shipattention"] = addresseeNameOnSubRecord;
     fields["shipTofobVal"] = markedData.shipTofobVal;
     fields["shipFromfobVal"] = markedData.shipFromfobVal;
@@ -1172,8 +1374,18 @@ define([
     fields["customer"] = markedData.customer;
     fields["custbody_total_item_weight"] = markedData.totalWeight;
     fields["cubage"] = markedData.totalCubage;
+    fields['trailer_number'] = markedData.trailerNumber;
+    fields['seal_number'] = markedData.sealNumber;
+    fields['special_instructions'] = markedData.specialInstructions;
+    fields['billToName'] = markedData.billToName;
+    fields['billToAddress'] = markedData.billToAddress;
+    fields['billToCity'] = markedData.billToCity;
+    fields['billToState'] = markedData.billToState;
+    fields['billToZip'] = markedData.billToZip;
     fields["items"] = x[0];
     fields["spsData"] = spsDataArr;
+
+   
 
     var json = { record: fields };
     return json;
@@ -1437,8 +1649,32 @@ define([
     );
     columns.push(
       search.createColumn({
+      name: "custitem_jil_nmfc",
+      join: "item",
+      label: "nmfc"
+   })
+   ); //updated
+
+   columns.push(
+   search.createColumn({
+    name: "custitem_jil_freight_class",
+    join: "item",
+    label: "freightclass"
+ })
+  ); //updated
+
+  columns.push(
+  search.createColumn({
+    name: "custitem_jil_commodity_info",
+    join: "item",
+    label: "commodityinfo"
+ })
+  ); //updated
+
+    columns.push(
+      search.createColumn({
         name: "formulanumeric_1",
-        formula: "{item.custitem3} *  {item.custitem1} * {item.custitem2}",
+        formula: "{item.custitem_jil_length} *  {item.custitem_jil_height} * {item.custitem_jil_width}", //updated
         label: "cubage"
       })
     );
@@ -1446,7 +1682,7 @@ define([
       search.createColumn({
         name: "formulanumeric_2",
         formula:
-          "{item.custitem3} *  {item.custitem1} * {item.custitem2} * {quantity}",
+          "{item.custitem_jil_length} *  {item.custitem_jil_height} * {item.custitem_jil_width} * {quantity}",//updated
         label: "totalcubage"
       })
     );
@@ -1536,6 +1772,9 @@ define([
             itemObj["description"] = jsonRow.description;
             itemObj["quantity"] = jsonRow.quantity;
             itemObj["weight"] = jsonRow.weight;
+            itemObj["nmfc"] = jsonRow.nmfc; //updated
+            itemObj["freightclass"] = jsonRow.freightclass; //updated
+            itemObj["commodityinfo"] = jsonRow.commodityinfo; //updated
             itemObj["cubage"] = jsonRow.cubage;
             itemObj["totalcubage"] = jsonRow.totalcubage;
             items.push(itemObj);

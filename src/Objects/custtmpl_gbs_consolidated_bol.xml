@@ -1,0 +1,9 @@
+<advancedpdftemplate scriptid="custtmpl_gbs_consolidated_bol" standard="STDTMPLPACKINGSLIP">
+  <description></description>
+  <displaysourcecode>T</displaysourcecode>
+  <isinactive>F</isinactive>
+  <preferred>T</preferred>
+  <printtype>PACKINGSLIP</printtype>
+  <title>GBS | Consolidated BOL</title>
+  <trantype>CUSTINVC</trantype>
+</advancedpdftemplate>
