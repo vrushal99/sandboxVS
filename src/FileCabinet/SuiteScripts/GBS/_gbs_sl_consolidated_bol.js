@@ -36,8 +36,24 @@ define([
    * @param {ServerResponse} context.response - Encapsulation of the Suitelet response
    * @Since 2015.2
    */
+
+  var transRecType;
+
   function onRequest(context) {
     try {
+
+      var getTransType = context.request.parameters.custpage_transaction_type;
+
+      if (getTransType == "salesorder") {
+
+        transRecType = "salesorder";
+
+      }
+      else if (getTransType == "itemfulfillment") {
+
+        transRecType = "itemfulfillment";
+
+      }
       var { request, parameters } = getParameters(context);
       //log.debug('parameters.custpage_radiofield', parameters.custpage_radiofield);
       if (request.method == "GET") {
@@ -398,6 +414,7 @@ define([
         custpage_total_cubage: parameters.custpage_cubage,
         custpage_total_weight: parameters.custpage_total_weight,
         custpage_carrier_ship: parameters.custpage_carrier_ship,
+        custpage_transaction_type: parameters.custpage_transaction_type,
      
       };
 
@@ -436,7 +453,8 @@ define([
       billToZip,
       sealNumber,
       trailerNumber,
-      specialInstructions
+      specialInstructions,
+      transType
       } = addBodyFields(form);
 
       form.addSubmitButton({
@@ -456,7 +474,8 @@ define([
               "transaction",
               parameters.custpage_customer,
               parameters.custpage_startdate,
-              parameters.custpage_enddate
+              parameters.custpage_enddate,
+              parameters.custpage_transaction_type
             )
           )
         );
@@ -554,6 +573,31 @@ define([
       container: "custpage_fg_1"
     });
     customer.isMandatory = true;
+
+    var transType = form.addField({
+      id: "custpage_transaction_type",
+      type: serverWidget.FieldType.SELECT,
+      label: "Transaction Type",
+      container: "custpage_fg_1"
+    });
+
+    transType.isMandatory = true;
+
+    transType.addSelectOption({
+      value: "",
+      text: ""
+    });
+
+    transType.addSelectOption({
+      value: "salesorder",
+      text: "Sales Order"
+    });
+
+    transType.addSelectOption({
+      value: "itemfulfillment",
+      text: "Item Fulfillment"
+    });
+
 
     var totalCubage = form.addField({
       id: "custpage_total_cubage",
@@ -848,7 +892,8 @@ define([
       billToZip,
       sealNumber,
       trailerNumber,
-      specialInstructions
+      specialInstructions,
+      transType
     };
   }
 
@@ -1257,7 +1302,7 @@ define([
       //log.debug("found", found);
       if (found == -1) {
         let getSpsValues = search.lookupFields({
-          type: "itemfulfillment",
+          type: transRecType,
           id: itemFullId,
           columns: [
             "custbody_sps_z7_addresslocationnumber",
@@ -1273,7 +1318,7 @@ define([
         // log.debug('poNumber', poNumber);
 
         let submitfieldobj = {
-          type: "itemfulfillment",
+          type: transRecType,
           id: itemFullId,
           values: {
             custbody_sps_carrierpronumber: markedData.proNumber,
@@ -1298,7 +1343,7 @@ define([
         var bolNumber = getSpsValues.custbody_sps_masterbilloflading;
 
         let loadItemFullRecord = record.load({
-          type: "itemfulfillment",
+          type: transRecType,
           id: itemFullId
         });
         let getPkgCount = loadItemFullRecord.getLineCount({
@@ -1400,7 +1445,7 @@ define([
     itemWeight
   ) {
     let getSpsValues = search.lookupFields({
-      type: "itemfulfillment",
+      type: transRecType,
       id: itemFullId,
       columns: [
         "custbody_sps_z7_addresslocationnumber",
@@ -1419,7 +1464,7 @@ define([
     let poNumber = getSpsValues.custbody_sps_ponum_from_salesorder;
     // log.debug('poNumber', poNumber);
     let loadItemFullRecord = record.load({
-      type: "itemfulfillment",
+      type: transRecType,
       id: itemFullId
     });
 
@@ -1575,15 +1620,70 @@ define([
 
     return bolNumber;
   }
-  function getTransactions(recType, customer, startDate, endDate) {
+
+
+  function getTransactions(recType, customer, startDate, endDate,transType) {
+
     var filters = [];
+
+    if(transType == "itemfulfillment"){
+
+      filters.push(
+        search.createFilter({
+          name: "type",
+          operator: "ANYOF",
+          values: "ItemShip"
+        })
+      );
+
+      filters.push(
+        search.createFilter({
+          name: "status",
+          operator: "ANYOF",
+          values: ["ItemShip:A", "ItemShip:B"]
+        })
+      );
+
     filters.push(
+      search.createFilter({ name: "shipping", operator: "IS", values: "F" })
+    );
+
+     filters.push(
       search.createFilter({
-        name: "type",
-        operator: "ANYOF",
-        values: "ItemShip"
+        name: "formulanumeric",
+        formula: "MOD({linesequencenumber},3)",
+        operator: "EQUALTO",
+        values: 0
       })
     );
+
+    }
+
+    if(transType == "salesorder"){
+
+      filters.push(
+        search.createFilter({
+          name: "type",
+          operator: "ANYOF",
+          values: "SalesOrd"
+        })
+      );
+
+      filters.push(
+        search.createFilter({
+          name: "status",
+          operator: "ANYOF",
+          values: ["SalesOrd:B"]
+        })
+      );
+    filters.push(search.createFilter({name: 'mainline', operator: 'IS', values: 'F'}));
+    filters.push(search.createFilter({name: 'taxline', operator: 'IS', values: 'F'}));
+    // filters.push(search.createFilter({name: 'shipline', operator: 'IS', values: 'F'}));
+    filters.push( search.createFilter({ name: "shipping", operator: "IS", values: "F" }));
+    // filters.push(search.createFilter({name: 'cogs', operator: 'IS', values: 'F'}))
+
+    }
+   
     filters.push(
       search.createFilter({ name: "name", operator: "ANYOF", values: customer })
     );
@@ -1604,25 +1704,12 @@ define([
     //filters.push(search.createFilter({name: 'mainline', operator: 'IS', values: 'F'}));
     //filters.push(search.createFilter({name: 'taxline', operator: 'IS', values: 'F'}));
     // filters.push(search.createFilter({name: 'shipline', operator: 'IS', values: 'F'}));
-    filters.push(
-      search.createFilter({ name: "shipping", operator: "IS", values: "F" })
-    );
+    // filters.push(
+    //   search.createFilter({ name: "shipping", operator: "IS", values: "F" })
+    // );
     //filters.push(search.createFilter({name: 'cogs', operator: 'IS', values: 'F'}));
-    filters.push(
-      search.createFilter({
-        name: "status",
-        operator: "ANYOF",
-        values: ["ItemShip:A", "ItemShip:B"]
-      })
-    );
-    filters.push(
-      search.createFilter({
-        name: "formulanumeric",
-        formula: "MOD({linesequencenumber},3)",
-        operator: "EQUALTO",
-        values: 0
-      })
-    );
+
+
 
     var columns = [];
     columns.push(
@@ -1686,7 +1773,7 @@ define([
         label: "totalcubage"
       })
     );
-
+    
     var results = search
       .create({
         type: recType,
@@ -1699,7 +1786,7 @@ define([
     if (!results || results.length == 0) {
       return false;
     }
-
+  
     return results;
   }
   function resultsToJSON(results) {
