@@ -15,77 +15,70 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
    *
    * @since 2015.2
    */
-  // function pageInit(context) {
-  
-  //   var sublistFieldName = context.fieldId;
 
-  //   var rec = currentRecord.get();
+  // var getShipToSelect;
 
-  //   var customerBOL = rec.getValue({
-  //     fieldId: "custpage_customer",
-  //   });
+  function pageInit(context) {
+    var rec = currentRecord.get();
 
-  
-  //   if(customerBOL){
+    var customerBOL = rec.getValue({
+      fieldId: "custpage_customer",
+    });
 
-  //   var customerSearchResult = searchOnCustomer(customerBOL);
+    if (customerBOL) {
 
-  //   var {fieldShipToSelect, fieldBillToSelect} = insertRemoveShipBillTo(rec, customerSearchResult);
-  //   }
-
-
-  // //     var getShipToSelect = rec.getValue({
-  // //       fieldId: "custpage_ship_to_select",
-  // //     });
-
-  // //   if(getShipToSelect) {
-
-
-  // //     if(_logValidation(getShipToSelect)){
-
-  // //     var customerSearchResult = searchOnCustomer(customerBOL);
-
-  // //     var {addressee, totalAddress, city, state, zipcode} = getValueFromSearch(customerSearchResult, getShipToSelect);
+      var customerSearchResult = searchOnCustomer(customerBOL);
 
       
-  // //     shipToSelectValue(rec, addressee, totalAddress, city, state, zipcode);
+      var getShipToSelectHidden = rec.getValue({
+        fieldId: "custpage_ship_to_select_hidden",
+      });
+
+      var getBillToSelectHidden = rec.getValue({
+        fieldId: "custpage_bill_to_select_hidden",
+      });
+
+
+      var { fieldShipToSelect, fieldBillToSelect } = insertRemoveShipBillTo(
+        rec,
+        customerSearchResult,
+        getShipToSelectHidden,
+        getBillToSelectHidden
+      );
+
+    }
+
   
-  // // }
-  // // else{
+    // if (getShipToSelect) {
+    //   if (_logValidation(getShipToSelect)) {
+    //     var customerSearchResult = searchOnCustomer(customerBOL);
 
+    //     var { addressee, totalAddress, city, state, zipcode } =
+    //       getValueFromSearch(customerSearchResult, getShipToSelect);
 
-  // //   shipToSelectValue(rec, '', '', '', '', '');
+    //     shipToSelectValue(rec, addressee, totalAddress, city, state, zipcode);
+    //   } else {
+    //     shipToSelectValue(rec, "", "", "", "", "");
+    //   }
+    // }
 
-  // // }
-  // //   }
+    // var getBillToSelect = rec.getValue({
+    //   fieldId: "custpage_bill_to_select",
+    // });
 
+    // if (getBillToSelect) {
+    //   if (_logValidation(getBillToSelect)) {
+    //     var customerSearchResult = searchOnCustomer(customerBOL);
 
-  //   // if(sublistFieldName == 'custpage_bill_to_select') {
+    //     var { addressee, totalAddress, city, state, zipcode } =
+    //       getValueFromSearch(customerSearchResult, getBillToSelect);
 
-  //   //   var getBillToSelect = rec.getValue({
-  //   //     fieldId: "custpage_bill_to_select",
-  //   //   });
-
-  //   //   if(_logValidation(getBillToSelect)){
-
-  //   //   var customerSearchResult = searchOnCustomer(customerBOL);
-
-  //   //   var {addressee, totalAddress, city, state, zipcode} = getValueFromSearch(customerSearchResult, getBillToSelect);
-
-      
-  //   //   billToValue(rec, addressee, totalAddress, city, state, zipcode);
-
-  //   //   }
-
-  //   //   else{
-
-  //   //     billToValue(rec, '', '', '', '', '');
-
-  //   //   }
-    
-  //   // }
-    
-  // }
+    //     billToValue(rec, addressee, totalAddress, city, state, zipcode);
+    //   } else {
+    //     billToValue(rec, "", "", "", "", "");
+    //   }
+    // }
+  }
 
   /**
    * Function to be executed after sublist is inserted, removed, or edited.
@@ -152,6 +145,7 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
 
   function fieldChanged(context) {
 
+
     var sublistFieldName = context.fieldId;
 
     var rec = currentRecord.get();
@@ -160,221 +154,226 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
       fieldId: "custpage_customer",
     });
 
-    if(sublistFieldName == 'custpage_customer'){
+    if (sublistFieldName == "custpage_customer") {
 
-    var customerSearchResult = searchOnCustomer(customerBOL);
+      shipToSelectValue(rec, "", "", "", "", "");
+      billToValue(rec, "", "", "", "", "");
 
-    var {fieldShipToSelect, fieldBillToSelect} = insertRemoveShipBillTo(rec, customerSearchResult);
+      var customerSearchResult = searchOnCustomer(customerBOL);
+
+      var { fieldShipToSelect, fieldBillToSelect } = insertRemoveShipBillTo(
+        rec,
+        customerSearchResult,
+      );
     }
 
-
-    if(sublistFieldName == 'custpage_ship_to_select') {
+    if (sublistFieldName == "custpage_ship_to_select") {
 
       var getShipToSelect = rec.getValue({
         fieldId: "custpage_ship_to_select",
       });
 
-      if(_logValidation(getShipToSelect)){
+      rec.setValue({
+        fieldId: "custpage_ship_to_select_hidden",
+        value: getShipToSelect,
+      });
 
-      var customerSearchResult = searchOnCustomer(customerBOL);
+      if (_logValidation(getShipToSelect)) {
+        var customerSearchResult = searchOnCustomer(customerBOL);
 
-      var {addressee, totalAddress, city, state, zipcode} = getValueFromSearch(customerSearchResult, getShipToSelect);
+        var { addressee, totalAddress, city, state, zipcode } =
+          getValueFromSearch(customerSearchResult, getShipToSelect);
 
-      
-      shipToSelectValue(rec, addressee, totalAddress, city, state, zipcode);
-  
-  }
-  else{
-
-    // alert('Please select a valid ship to address');
-
-    shipToSelectValue(rec, '', '', '', '', '');
-
-  }
+        shipToSelectValue(rec, addressee, totalAddress, city, state, zipcode);
+      }
+       else {
+        shipToSelectValue(rec, "", "", "", "", "");
+      }
     }
 
-
-    if(sublistFieldName == 'custpage_bill_to_select') {
-
+    if (sublistFieldName == "custpage_bill_to_select") {
       var getBillToSelect = rec.getValue({
         fieldId: "custpage_bill_to_select",
       });
 
-      if(_logValidation(getBillToSelect)){
+      rec.setValue({
+        fieldId: "custpage_bill_to_select_hidden",
+        value: getBillToSelect,
+      });
 
-      var customerSearchResult = searchOnCustomer(customerBOL);
+      if (_logValidation(getBillToSelect)) {
+        var customerSearchResult = searchOnCustomer(customerBOL);
 
-      var {addressee, totalAddress, city, state, zipcode} = getValueFromSearch(customerSearchResult, getBillToSelect);
+        var { addressee, totalAddress, city, state, zipcode } =
+          getValueFromSearch(customerSearchResult, getBillToSelect);
 
-      
-      billToValue(rec, addressee, totalAddress, city, state, zipcode);
-
+        billToValue(rec, addressee, totalAddress, city, state, zipcode);
+      } else {
+        billToValue(rec, "", "", "", "", "");
       }
-
-      else{
-
-        // alert('Please select a valid bill to address');
-
-        billToValue(rec, '', '', '', '', '');
-
-      }
-    
     }
   }
 
   return {
-    // pageInit: pageInit,
+    pageInit: pageInit,
     sublistChanged: sublistChanged,
     fieldChanged: fieldChanged,
   };
 
-   function billToValue(rec, addressee, totalAddress, city, state, zipcode) {
-     rec.setValue({
-       fieldId: "custpage_billtoname",
-       value: addressee,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
+  function billToValue(rec, addressee, totalAddress, city, state, zipcode) {
+    rec.setValue({
+      fieldId: "custpage_billtoname",
+      value: addressee,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
 
+    rec.setValue({
+      fieldId: "custpage_billtoaddress",
+      value: totalAddress,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
 
-     rec.setValue({
-       fieldId: "custpage_billtoaddress",
-       value: totalAddress,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
+    rec.setValue({
+      fieldId: "custpage_billtocity",
+      value: city,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
 
-     rec.setValue({
-       fieldId: "custpage_billtocity",
-       value: city,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
+    rec.setValue({
+      fieldId: "custpage_billtostate",
+      value: state,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
 
-     rec.setValue({
-       fieldId: "custpage_billtostate",
-       value: state,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
+    rec.setValue({
+      fieldId: "custpage_billtozip",
+      value: zipcode,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
+  }
 
+  function shipToSelectValue(
+    rec,
+    addressee,
+    totalAddress,
+    city,
+    state,
+    zipcode
+  ) {
+    rec.setValue({
+      fieldId: "custpage_shiptoname",
+      value: addressee || "",
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
+    //}
+    //if(_logValidation(totalAddress)){
+    rec.setValue({
+      fieldId: "custpage_shiptoaddress",
+      value: totalAddress,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
+    //}
+    //if(_logValidation(city)){
+    rec.setValue({
+      fieldId: "custpage_shiptocity",
+      value: city,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
+    //}
+    //if(_logValidation(state)){
+    rec.setValue({
+      fieldId: "custpage_shiptostate",
+      value: state,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
+    //}
+    //if(_logValidation(zipcode)){
+    rec.setValue({
+      fieldId: "custpage_shiptozip",
+      value: zipcode,
+      ignoreFieldChange: true,
+      forceSyncSourcing: true,
+    });
+  }
 
-     rec.setValue({
-       fieldId: "custpage_billtozip",
-       value: zipcode,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
-   }
+  function getValueFromSearch(customerSearchResult, getShipToSelect) {
+    if(_logValidation(customerSearchResult)){
 
-   function shipToSelectValue(rec, addressee, totalAddress, city, state, zipcode) {
-     rec.setValue({
-       fieldId: "custpage_shiptoname",
-       value: addressee || '',
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
-     //}
-     //if(_logValidation(totalAddress)){
-     rec.setValue({
-       fieldId: "custpage_shiptoaddress",
-       value: totalAddress,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
-     //}
-     //if(_logValidation(city)){
-     rec.setValue({
-       fieldId: "custpage_shiptocity",
-       value: city,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
-     //}
-     //if(_logValidation(state)){
-     rec.setValue({
-       fieldId: "custpage_shiptostate",
-       value: state,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
-     //}
-     //if(_logValidation(zipcode)){
-     rec.setValue({
-       fieldId: "custpage_shiptozip",
-       value: zipcode,
-       ignoreFieldChange: true,
-       forceSyncSourcing: true
-     });
-   }
+    for (let j = 0; j < customerSearchResult.length; j++) {
+      var addressee = customerSearchResult[j].getValue({
+        name: "addressee",
+        join: "Address",
+        label: "Addressee",
+      });
 
-   function getValueFromSearch(customerSearchResult, getShipToSelect) {
-     for (let j = 0; j < customerSearchResult.length; j++) {
+      if (addressee == getShipToSelect) {
+        let address1 = customerSearchResult[j].getValue({
+          name: "address1",
+          join: "Address",
+          label: "Address 1",
+        });
+        let address2 = customerSearchResult[j].getValue({
+          name: "address2",
+          join: "Address",
+          label: "Address 2",
+        });
+        var city = customerSearchResult[j].getValue({
+          name: "city",
+          join: "Address",
+          label: "City",
+        });
+        var state = customerSearchResult[j].getValue({
+          name: "state",
+          join: "Address",
+          label: "State/Province",
+        });
+        var zipcode = customerSearchResult[j].getValue({
+          name: "zipcode",
+          join: "Address",
+          label: "Zip Code",
+        });
 
-       var addressee = customerSearchResult[j].getValue({
-         name: "addressee",
-         join: "Address",
-         label: "Addressee",
-       });
+        var totalAddress = address1 + " " + address2;
+      }
+    }
+    return { addressee, totalAddress, city, state, zipcode };
+  }
+  }
 
-       if (addressee == getShipToSelect) {
+  function insertRemoveShipBillTo(rec, customerSearchResult, getShipToSelectHidden, getBillToSelectHidden) {
 
-         let address1 = customerSearchResult[j].getValue({
-           name: "address1",
-           join: "Address",
-           label: "Address 1",
-         });
-         let address2 = customerSearchResult[j].getValue({
-           name: "address2",
-           join: "Address",
-           label: "Address 2",
-         });
-         var city = customerSearchResult[j].getValue({
-           name: "city",
-           join: "Address",
-           label: "City",
-         });
-         var state = customerSearchResult[j].getValue({
-           name: "state",
-           join: "Address",
-           label: "State/Province",
-         });
-         var zipcode = customerSearchResult[j].getValue({
-           name: "zipcode",
-           join: "Address",
-           label: "Zip Code",
-         });
-
-         var totalAddress = address1 + " " + address2;
-
-       }
-     }
-     return { addressee, totalAddress, city, state, zipcode };
-   }
-
-   function insertRemoveShipBillTo(rec, customerSearchResult) {
-     var fieldShipToSelect = rec.getField({
-       fieldId: "custpage_ship_to_select",
-     });
-
-     var fieldBillToSelect = rec.getField({
-       fieldId: "custpage_bill_to_select",
-     });
-
-   rec.setValue({
+    var fieldShipToSelect = rec.getField({
       fieldId: "custpage_ship_to_select",
-      value: ''
     });
 
-  rec.setValue({
+    var fieldBillToSelect = rec.getField({
       fieldId: "custpage_bill_to_select",
-      value: ''
     });
-     let fieldGetSelect = fieldShipToSelect.getSelectOptions();
-     let fieldBillSelect = fieldBillToSelect.getSelectOptions();
 
-     for(let i = 0; i < fieldGetSelect.length; i++){
+    //  rec.setValue({
+    //     fieldId: "custpage_ship_to_select",
+    //     value: ''
+    //   });
 
+    // rec.setValue({
+    //     fieldId: "custpage_bill_to_select",
+    //     value: ''
+    //   });
+    let fieldGetSelect = fieldShipToSelect.getSelectOptions();
+    let fieldBillSelect = fieldBillToSelect.getSelectOptions();
+
+    if(_logValidation(fieldGetSelect)){
+
+    for (let i = 1; i < fieldGetSelect.length; i++) {
       fieldShipToSelect.removeSelectOption({
         value: fieldGetSelect[i].value,
       });
@@ -382,106 +381,128 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
       fieldBillToSelect.removeSelectOption({
         value: fieldBillSelect[i].value,
       });
+    }
+  }
+    //  fieldShipToSelect.removeSelectOption({
+    //    value: '',
+    //  });
 
-     }
+    //  fieldBillToSelect.removeSelectOption({
+    //   value: '',
+    // });
 
-     fieldShipToSelect.removeSelectOption({
-       value: '',
-     });
+    // fieldShipToSelect.insertSelectOption({
+    //   value: "",
+    //   text: "",
+    // });
 
-     fieldBillToSelect.removeSelectOption({
-      value: '',
+    // fieldBillToSelect.insertSelectOption({
+    //   value: "",
+    //   text: "",
+    // });
+
+    if(_logValidation(customerSearchResult)){
+
+    for (let i = 0; i < customerSearchResult.length; i++) {
+      var addressee = customerSearchResult[i].getValue({
+        name: "addressee",
+        join: "Address",
+        label: "Addressee",
+      });
+
+      fieldShipToSelect.insertSelectOption({
+        value: addressee,
+        text: addressee,
+      });
+
+      fieldBillToSelect.insertSelectOption({
+        value: addressee,
+        text: addressee,
+      });
+    }
+  }
+
+
+  if(_logValidation(getShipToSelectHidden)){
+  rec.setValue({
+    fieldId: "custpage_ship_to_select",
+    value: getShipToSelectHidden,
+    ignoreFieldChange: true,
+    forceSyncSourcing: true,
+  });
+}
+
+  if(_logValidation(getBillToSelectHidden)){
+  rec.setValue({
+    fieldId: "custpage_bill_to_select",
+    value: getBillToSelectHidden,
+    ignoreFieldChange: true,
+    forceSyncSourcing: true,
+  });
+}
+
+    return { fieldShipToSelect, fieldBillToSelect };
+  }
+
+  function searchOnCustomer(customerBOL) {
+
+    if(_logValidation(customerBOL)){
+
+    var customerSearchObj = search.create({
+      type: "customer",
+
+      filters: [["internalid", "anyof", customerBOL]],
+
+      columns: [
+        search.createColumn({
+          name: "addressee",
+          join: "Address",
+          label: "Addressee",
+        }),
+        search.createColumn({
+          name: "address1",
+          join: "Address",
+          label: "Address 1",
+        }),
+        search.createColumn({
+          name: "address2",
+          join: "Address",
+          label: "Address 2",
+        }),
+        search.createColumn({
+          name: "city",
+          join: "Address",
+          label: "City",
+        }),
+        search.createColumn({
+          name: "state",
+          join: "Address",
+          label: "State/Province",
+        }),
+        search.createColumn({
+          name: "country",
+          join: "Address",
+          label: "Country",
+        }),
+        search.createColumn({
+          name: "zipcode",
+          join: "Address",
+          label: "Zip Code",
+        }),
+        search.createColumn({
+          name: "addressinternalid",
+          join: "Address",
+          label: "Address Internal ID",
+        }),
+      ],
     });
 
-     fieldShipToSelect.insertSelectOption({
-       value: '',
-       text: '',
-     });
+    var customerSearchResult = customerSearchObj.run().getRange(0, 1000);
+    return customerSearchResult;
+  }
+  }
 
-     fieldBillToSelect.insertSelectOption({
-       value: '',
-       text: '',
-     });
-
-     for (let i = 0; i < customerSearchResult.length; i++) {
-
-       var addressee = customerSearchResult[i].getValue({
-         name: "addressee",
-         join: "Address",
-         label: "Addressee",
-       });
-
-       fieldShipToSelect.insertSelectOption({
-         value: addressee,
-         text: addressee,
-       });
-
-       fieldBillToSelect.insertSelectOption({
-         value: addressee,
-         text: addressee,
-       });
-     }
-
-     return { fieldShipToSelect, fieldBillToSelect };
-   }
-
-   function searchOnCustomer(customerBOL) {
-     var customerSearchObj = search.create({
-       type: "customer",
-
-       filters: [
-         ['internalid', 'anyof', customerBOL]
-       ],
-
-       columns: [
-         search.createColumn({
-           name: "addressee",
-           join: "Address",
-           label: "Addressee",
-         }),
-         search.createColumn({
-           name: "address1",
-           join: "Address",
-           label: "Address 1",
-         }),
-         search.createColumn({
-           name: "address2",
-           join: "Address",
-           label: "Address 2",
-         }),
-         search.createColumn({
-           name: "city",
-           join: "Address",
-           label: "City",
-         }),
-         search.createColumn({
-           name: "state",
-           join: "Address",
-           label: "State/Province",
-         }),
-         search.createColumn({
-           name: "country",
-           join: "Address",
-           label: "Country",
-         }),
-         search.createColumn({
-           name: "zipcode",
-           join: "Address",
-           label: "Zip Code",
-         }),
-         search.createColumn({
-           name: "addressinternalid",
-           join: "Address",
-           label: "Address Internal ID",
-         }),
-       ],
-     });
-
-     var customerSearchResult = customerSearchObj.run().getRange(0, 1000);
-     return customerSearchResult;
-   }
-
-   function _logValidation(value) {
+  function _logValidation(value) {
     if (
       value != null &&
       value != "" &&
@@ -496,6 +517,4 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
       return false;
     }
   }
-
-  
 });
