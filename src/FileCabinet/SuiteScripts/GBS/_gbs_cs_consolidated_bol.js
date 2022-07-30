@@ -89,13 +89,19 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
    *
    * @since 2015.2
    */
+
   function sublistChanged(context) {
-    var sublists = ["custpage_sub_0", "custpage_sub_1", "custpage_sub_2"];
-    //alert(sublists);
-    var rec = currentRecord.get();
-    var sublistCount = sublists.length;
+
+    var sublistIdItem = context.sublistId;
+    var sublists = [];
     var totalWeight = 0;
     var totalCubage = 0;
+    sublists.push(sublistIdItem);
+    // alert(sublists);
+    var rec = currentRecord.get();
+    var sublistCount = sublists.length;
+    // alert(sublistCount);
+   
     // getTotalDims(sublists, context);
 
     for (var x = 0; x < sublistCount; x++) {
@@ -103,7 +109,7 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
       // log.debug({ title: "sublist", details: sublist });
 
       var subLineCount = rec.getLineCount({ sublistId: sublist });
-      //log.debug({ title: "subLineCount", details: subLineCount });
+      // log.debug({ title: "subLineCount", details: subLineCount });
 
       for (var y = 0; y < subLineCount; y++) {
         var mark = rec.getSublistValue({

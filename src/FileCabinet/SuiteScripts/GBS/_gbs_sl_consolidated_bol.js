@@ -204,6 +204,22 @@ define([
               name: "custpage_subitem_totalcubage",
               line: y,
             }),
+            custpage_subitem_commodityinfo: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_commodityinfo",
+              line: y,
+            }),
+            custpage_subitem_freightclass: context.request.getSublistValue({    
+              group: sublist,
+              name: "custpage_subitem_freightclass",
+              line: y,
+            }),
+            custpage_subitem_nmfc: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_nmfc",
+              line: y,
+            }),
+
           });
 
           singlePdfArray.push({
@@ -245,6 +261,21 @@ define([
             custpage_subitem_totalcubage: context.request.getSublistValue({
               group: sublist,
               name: "custpage_subitem_totalcubage",
+              line: y,
+            }),
+            custpage_subitem_commodityinfo: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_commodityinfo",
+              line: y,
+            }),
+            custpage_subitem_freightclass: context.request.getSublistValue({    
+              group: sublist,
+              name: "custpage_subitem_freightclass",
+              line: y,
+            }),
+            custpage_subitem_nmfc: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_nmfc",
               line: y,
             }),
           });
@@ -464,6 +495,7 @@ define([
           id: "custpage_fg_2",
           label: "Item Fulfillments",
         });
+
         var formatted = formatJSON(
           resultsToJSON(
             getTransactions(
@@ -1214,7 +1246,7 @@ define([
       ));
 
       fields['commodity'] = resultCommodity;
-      // log.debug("resultCommodity function", resultCommodity);
+      log.debug("resultCommodity function", resultCommodity);
 
       var arrayOfURL = [];
       var json = pdfJsonObj(
@@ -1338,7 +1370,7 @@ define([
     consolidated
   ) {
     //log.debug("Start processLineLevelData...");
-
+    log.debug("x", x);
     var arrGroupItemId = [];
 
     for (let f = 0; f < x.length; f++) {
@@ -1469,6 +1501,8 @@ define([
           itemFullId: itemFullId,
           itemWeight: itemWeight || 0,
         });
+
+      
       } else {
         let obj = spsDataArr[found];
         obj.itemWeight = parseFloat(obj.itemWeight) + parseFloat(itemWeight);
@@ -1491,7 +1525,7 @@ define([
     //  log.debug("finalSearchResult", finalSearchResult);
 
      ({resultCommodity,commodityArr} = carrierInfoCommodity(finalSearchResult));
-
+    
       // log.debug("commodityArr line level data", commodityArr);
     //log.debug("End processLineLevelData...");
     return { shipToLocationNum, bolNumber, totalPkgCount,resultCommodity,commodityArr };
@@ -1557,7 +1591,7 @@ define([
       ]
    });
     var commoditySearchResults = salesorderSearchObj.run().getRange(0, 1000);
-    // log.debug('commoditySearchResults', commoditySearchResults);
+    log.debug('commoditySearchResults', commoditySearchResults);
     // carrierInfoCommodity(commoditySearchResults);
     return commoditySearchResults;
   }
@@ -1620,7 +1654,7 @@ define([
       commodityArr.push(commodityObj);
     }
   }
-    // log.debug('commodityArr', commodityArr);
+    log.debug('commodityArr', commodityArr);
     var resultCommodity = [];
   commodityArr.reduce(function(res, value) {
   if (!res[value.commodityInfo]) {
@@ -1633,7 +1667,7 @@ define([
   return res;
 }, {});
 
-  // log.debug('resultCommodity', resultCommodity);
+  log.debug('resultCommodity', resultCommodity);
 
   return {resultCommodity, commodityArr};
    
@@ -2210,13 +2244,14 @@ define([
       label: sublistLabel,
       tab: tab,
     });
-   
+        
     sublist.addMarkAllButtons();
     sublist.addField({
       id: "custpage_subitem_mark",
       label: "mark",
       type: serverWidget.FieldType.CHECKBOX,
     });
+ 
     var resCount = json.length;
     //log.debug({title: 'resCount', details: resCount});
     //log.debug({title: 'Add Line Items to Sublist'});
@@ -2224,7 +2259,7 @@ define([
       var result = json[j];
       for (n in result) {
         var id = "custpage_subitem_" + n;
-        //log.debug({title: 'id', details: id});
+        log.debug({title: 'id', details: id});
         var label = n;
         //log.debug({title: 'label', details: label});
         var value = result[n];
