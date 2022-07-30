@@ -209,6 +209,7 @@ define([
               name: "custpage_subitem_commodityinfo",
               line: y,
             }),
+          
             custpage_subitem_freightclass: context.request.getSublistValue({    
               group: sublist,
               name: "custpage_subitem_freightclass",
@@ -217,6 +218,16 @@ define([
             custpage_subitem_nmfc: context.request.getSublistValue({
               group: sublist,
               name: "custpage_subitem_nmfc",
+              line: y,
+            }),
+            custpage_subitem_pallet: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_pallet",
+              line: y,
+            }),
+            custpage_subitem_cases: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_cases",
               line: y,
             }),
 
@@ -278,8 +289,18 @@ define([
               name: "custpage_subitem_nmfc",
               line: y,
             }),
+            custpage_subitem_pallet: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_pallet",
+              line: y,
+            }),
+            custpage_subitem_cases: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_cases",
+              line: y,
+            }),
           });
-
+          
           var weight = context.request.getSublistValue({
             group: sublist,
             name: "custpage_subitem_weight",
@@ -431,7 +452,7 @@ define([
       //log.debug({ title: "parameters", details: parameters });
       var sublistData = getSublistData(context);
       //log.debug({ title: "sublistData", details: sublistData });
-
+      
       var defaultValues = {
         custpage_startdate: parameters.custpage_startdate,
         custpage_enddate: parameters.custpage_enddate,
@@ -1246,7 +1267,7 @@ define([
       ));
 
       fields['commodity'] = resultCommodity;
-      log.debug("resultCommodity function", resultCommodity);
+      // log.debug("resultCommodity function", resultCommodity);
 
       var arrayOfURL = [];
       var json = pdfJsonObj(
@@ -1293,7 +1314,7 @@ define([
 
         var spsDataArr = [];
         var fields = {};
-        var totalPkgCount = 0;
+        
         if (_logValidation(checkIfConsolidated)) {
           let conbolNumber = getBOLNum(
             "customrecord_gbs_consolidated_bol_num",
@@ -1303,12 +1324,11 @@ define([
           fields["isConsolidatedpresent"] = true;
           fields["conBolNumber"] = conbolNumber;
 
-          ({ shipToLocationNum, bolNumber, totalPkgCount, resultCommodity,commodityArr } =
+          ({ shipToLocationNum, bolNumber, resultCommodity,commodityArr } =
             processLineLevelData(
               x,
               spsDataArr,
               conbolNumber,
-              totalPkgCount,
               fields,
               markedData,
               true
@@ -1322,12 +1342,11 @@ define([
           // );
           standaloneBOLNum = "";
           fields["singleBolNumber"] = standaloneBOLNum;
-          ({ shipToLocationNum, bolNumber, totalPkgCount, resultCommodity,commodityArr } =
+          ({ shipToLocationNum, bolNumber, resultCommodity,commodityArr } =
             processLineLevelData(
               x,
               spsDataArr,
               standaloneBOLNum,
-              totalPkgCount,
               fields,
               markedData,
               false
@@ -1364,24 +1383,26 @@ define([
     x,
     spsDataArr,
     conbolNumber,
-    totalPkgCount,
     fields,
     markedData,
     consolidated
   ) {
     //log.debug("Start processLineLevelData...");
-    log.debug("x", x);
-    var arrGroupItemId = [];
+    // log.debug("x", x);
+   
+    ({resultCommodity,commodityArr} = carrierInfoCommodity(x));
 
     for (let f = 0; f < x.length; f++) {
       let itemFullId = x[f].custpage_subitem_itemid;
       // log.debug("itemFullId", itemFullId);
 
-      arrGroupItemId.push(itemFullId);
-
       let itemWeight = parseFloat(x[f].custpage_subitem_weight);
       // log.debug(`itemWeight ${itemFullId}`, itemWeight);
       itemWeight = parseFloat(itemWeight.toFixed(2));
+
+    
+      let getPkgCount = parseFloat(x[f].custpage_subitem_cases);
+      // log.debug('getPkgCount', getPkgCount);
 
       var found = spsDataArr.findIndex(function (element) {
         return element.itemFullId == itemFullId;
@@ -1456,41 +1477,11 @@ define([
 
         var bolNumber = getSpsValues.custbody_sps_masterbilloflading;
 
-          let loadItemFullRecord = record.load({
-            type: transRecType,
-            id: itemFullId,
-          });
-
-          var getPkgCount = 0;
-
-          let casesCount = loadItemFullRecord.getLineCount({
-            sublistId: "item",
-            // sublistId: "recmachcustrecord_sps_pack_asn"
-          });
-          for(let i = 0; i < casesCount; i++){
-          
-           let casesItem = loadItemFullRecord.getSublistValue({
-            sublistId: "item",
-            fieldId: "custcol_gbs_if_so_cases",
-            line: i,
-            });
-
-            // log.debug("casesItem", casesItem);
-            getPkgCount += casesItem;
-
-          }
-          // log.debug("getPkgCount", getPkgCount);
-
-          //log.debug('getPkgCount', getPkgCount);
-    
         let poType = getSpsValues.custbody_sps_potype;
         // log.debug("poType", poType);
 
         let department = getSpsValues.custbody_sps_department;
         // log.debug("department", department);
-        totalPkgCount = totalPkgCount + getPkgCount;
-        //log.debug('totalPkgCount', totalPkgCount);
-        fields["totalPkgCount"] = totalPkgCount || 0;
 
         spsDataArr.push({
           poNumber: poNumber,
@@ -1502,147 +1493,42 @@ define([
           itemWeight: itemWeight || 0,
         });
 
-      
+        // log.debug("spsDataArr", spsDataArr);
       } else {
         let obj = spsDataArr[found];
         obj.itemWeight = parseFloat(obj.itemWeight) + parseFloat(itemWeight);
         x[found].custpage_subitem_weight = obj.itemWeight;
+
+        let objPkg = spsDataArr[found];
+        objPkg.getPkgCount = parseFloat(objPkg.getPkgCount) + parseFloat(getPkgCount);
+        x[found].custpage_subitem_cases = objPkg.getPkgCount;
+
       }
     }
-    // log.debug("arrGroupItemId", arrGroupItemId);
-
-    var finalSearchResult = [];
-
-    let uniqueItemId = [...new Set(arrGroupItemId)];
-    // log.debug("uniqueItemId", uniqueItemId);
-
-    for (let i = 0; i < uniqueItemId.length; i++) {
-      let itemFullIdComm = uniqueItemId[i];
-      commoditySearchResults = groupCommodity(itemFullIdComm);
-      // log.debug("commoditySearchResults", commoditySearchResults);
-      finalSearchResult.push(commoditySearchResults);
-    }
-    //  log.debug("finalSearchResult", finalSearchResult);
-
-     ({resultCommodity,commodityArr} = carrierInfoCommodity(finalSearchResult));
-    
-      // log.debug("commodityArr line level data", commodityArr);
+   
     //log.debug("End processLineLevelData...");
-    return { shipToLocationNum, bolNumber, totalPkgCount,resultCommodity,commodityArr };
+    return { shipToLocationNum, bolNumber, resultCommodity,commodityArr };
   }
 
-  function groupCommodity(itemFullIdComm){
-
-    if(_logValidation(itemFullIdComm)){
-
-    // log.debug("itemFullIdComm", itemFullIdComm);
-    var salesorderSearchObj = search.create({
-      type: transRecType,
-      filters:
-      [
-        ["type","anyof",transRecSearchType], 
-        "AND", 
-        ["internalid","anyof",itemFullIdComm], 
-        "AND", 
-        ["shipping","is","F"],
-        "AND", 
-        // ["mainline","is","F"], 
-        // "AND", 
-        ["taxline","is","F"]
-     ],
-      columns:
-      [
-         search.createColumn({
-            name: "custitem_jil_nmfc",
-            join: "item",
-            summary: "GROUP",
-            label: "NMFC"
-         }),
-         search.createColumn({
-            name: "custitem_jil_commodity_info",
-            join: "item",
-            summary: "GROUP",
-            sort: search.Sort.ASC,
-            label: "Commodity Information"
-         }),
-         search.createColumn({
-            name: "custitem_jil_freight_class",
-            join: "item",
-            summary: "GROUP",
-            label: "Freight Class"
-         }),
-         search.createColumn({
-          name: "custcol_gbs_if_so_pallet",
-          summary: "SUM",
-          sort: search.Sort.ASC,
-          label: "Pallet"
-       }),
-       search.createColumn({
-        name: "custcol_gbs_if_so_cases",
-        summary: "SUM",
-        label: "Cases"
-     }),
-     search.createColumn({
-      name: "formulanumeric",
-      summary: "SUM",
-      formula: "{item.weight} * {quantity}",
-      label: "Formula (Numeric)"
-   })
-      ]
-   });
-    var commoditySearchResults = salesorderSearchObj.run().getRange(0, 1000);
-    log.debug('commoditySearchResults', commoditySearchResults);
-    // carrierInfoCommodity(commoditySearchResults);
-    return commoditySearchResults;
-  }
-
-  }
-
-  function carrierInfoCommodity(finalSearchResult){
+  function carrierInfoCommodity(x){
 
     var commodityArr = [];
 
-    // log.debug("finalSearchResult.length", finalSearchResult.length);
-
-    for (let i = 0; i < finalSearchResult.length; i++) {
+    for (let i = 0; i < x.length; i++) {
      
-      for (let j = 0; j < finalSearchResult[i].length; j++) {
-       
-      let nmfcComm = finalSearchResult[i][j].getValue({
-        name: "custitem_jil_nmfc",
-        join: "item",
-        summary: "GROUP",
-        label: "NMFC"
-      }) || "";
-      let commodityInfo = finalSearchResult[i][j].getText({
-        name: "custitem_jil_commodity_info",
-        join: "item",
-        summary: "GROUP",
-        label: "Commodity Information"
-      }) || "";
-      let freightClassComm = finalSearchResult[i][j].getText({
-        name: "custitem_jil_freight_class",
-        join: "item",
-        summary: "GROUP",
-        label: "Freight Class"
-      }) || "";
-      let palletComm = finalSearchResult[i][j].getValue({
-        name: "custcol_gbs_if_so_pallet",
-        summary: "SUM",
-        sort: search.Sort.ASC,
-        label: "Pallet"
-      }) || "";
-      let casesComm = finalSearchResult[i][j].getValue({
-        name: "custcol_gbs_if_so_cases",
-        summary: "SUM",
-        label: "Cases"
-      }) || "";
-      let itemWeightComm = finalSearchResult[i][j].getValue({
-        name: "formulanumeric",
-        summary: "SUM",
-        formula: "{item.weight} * {quantity}",
-        label: "Formula (Numeric)"
-      }) || "";
+      let nmfcComm = x[i].custpage_subitem_nmfc || "";
+      // log.debug("nmfcComm", nmfcComm);
+      let commodityInfo = x[i].custpage_subitem_commodityinfo || "";
+
+      let freightClassComm = x[i].custpage_subitem_freightclass || "";
+
+      let palletComm = x[i].custpage_subitem_pallet || "";
+
+      let casesComm = x[i].custpage_subitem_cases || "";
+
+      let itemWeightComm = x[i].custpage_subitem_weight || "";
+
+
       let commodityObj = {
         nmfcComm: parseFloat(nmfcComm) || 0,
         commodityInfo: commodityInfo || "",
@@ -1652,9 +1538,8 @@ define([
         itemWeightComm: parseFloat(itemWeightComm) || 0,
       };
       commodityArr.push(commodityObj);
-    }
   }
-    log.debug('commodityArr', commodityArr);
+    // log.debug('commodityArr', commodityArr);
     var resultCommodity = [];
   commodityArr.reduce(function(res, value) {
   if (!res[value.commodityInfo]) {
@@ -1667,7 +1552,7 @@ define([
   return res;
 }, {});
 
-  log.debug('resultCommodity', resultCommodity);
+  // log.debug('resultCommodity', resultCommodity);
 
   return {resultCommodity, commodityArr};
    
@@ -2025,6 +1910,10 @@ define([
       search.createColumn({ name: "tranid", label: "documentnumber" })
     );
     columns.push(search.createColumn({ name: "item", label: "item" }));
+
+    columns.push(search.createColumn({ name: "custcol_gbs_if_so_pallet", label: "Pallet" }));
+    columns.push(search.createColumn({ name: "custcol_gbs_if_so_cases", label: "Cases" }));
+
     columns.push(
       search.createColumn({
         name: "salesdescription",
@@ -2099,7 +1988,7 @@ define([
     if (!results || results.length == 0) {
       return false;
     }
-
+    // log.debug("results", results);
     return results;
   }
   function resultsToJSON(results) {
@@ -2131,7 +2020,7 @@ define([
         }
         records.push(record);
       }
-
+// log.debug("records result to json", records);
       return records;
     } else {
       return false;
@@ -2139,6 +2028,7 @@ define([
   }
   function formatJSON(json) {
     if (json) {
+      // log.debug("json", json);
       var jsonLen = json.length;
       //log.debug({ title: "Length", details: jsonLen });
       var records = [];
@@ -2177,12 +2067,15 @@ define([
             itemObj["commodityinfo"] = jsonRow.commodityinfo; //updated
             itemObj["cubage"] = jsonRow.cubage;
             itemObj["totalcubage"] = jsonRow.totalcubage;
+            itemObj["pallet"] = jsonRow.Pallet;
+            itemObj["cases"] = jsonRow.Cases;
             items.push(itemObj);
           }
         }
         recordsRow["items"] = items;
       }
-      //log.debug({ title: "Records", details: records });
+      // log.debug('itemobj',itemObj)
+      // log.debug({ title: "Records", details: records });
       return records;
     } else {
       return false;
@@ -2227,7 +2120,6 @@ define([
 
       addSublistFromJSON(form, sublistId, tabItems, "Items", tabId);
     }
-
     // log.debug({ title: "arrayOfTabs", details: arrayOfTabs });
     return arrayOfTabs;
   }
@@ -2259,7 +2151,7 @@ define([
       var result = json[j];
       for (n in result) {
         var id = "custpage_subitem_" + n;
-        log.debug({title: 'id', details: id});
+        // log.debug({title: 'id', details: id});
         var label = n;
         //log.debug({title: 'label', details: label});
         var value = result[n];
@@ -2273,6 +2165,7 @@ define([
             type: serverWidget.FieldType.TEXT,
           });
         }
+   
         // If the value is blank, set it to null to avoid errors
         if (!value) {
           value = null;
@@ -2285,6 +2178,30 @@ define([
         });
       }
     }
+    // var getComm = sublist.getField({
+    //   id: "custpage_subitem_commodityinfo",
+    //   line: 0,
+    // });
+    // getComm.updateDisplayType({
+    //   displayType: serverWidget.FieldDisplayType.HIDDEN,
+    // });
+
+    let hidePallet = sublist.getField({
+      id: "custpage_subitem_pallet",
+      line: 0,
+    });
+    hidePallet.updateDisplayType({
+      displayType: serverWidget.FieldDisplayType.HIDDEN,
+    });
+
+    let hideCases = sublist.getField({
+      id: "custpage_subitem_cases",
+      line: 0,
+    });
+    hideCases.updateDisplayType({
+      displayType: serverWidget.FieldDisplayType.HIDDEN,
+    });
+
   }
 
   return {
