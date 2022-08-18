@@ -16,9 +16,10 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
    * @since 2015.2
    */
 
-  // var getShipToSelect;
 
   function pageInit(context) {
+
+  
     var rec = currentRecord.get();
 
     var customerBOL = rec.getValue({
@@ -47,37 +48,6 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
       );
 
     }
-
-  
-    // if (getShipToSelect) {
-    //   if (_logValidation(getShipToSelect)) {
-    //     var customerSearchResult = searchOnCustomer(customerBOL);
-
-    //     var { addressee, totalAddress, city, state, zipcode } =
-    //       getValueFromSearch(customerSearchResult, getShipToSelect);
-
-    //     shipToSelectValue(rec, addressee, totalAddress, city, state, zipcode);
-    //   } else {
-    //     shipToSelectValue(rec, "", "", "", "", "");
-    //   }
-    // }
-
-    // var getBillToSelect = rec.getValue({
-    //   fieldId: "custpage_bill_to_select",
-    // });
-
-    // if (getBillToSelect) {
-    //   if (_logValidation(getBillToSelect)) {
-    //     var customerSearchResult = searchOnCustomer(customerBOL);
-
-    //     var { addressee, totalAddress, city, state, zipcode } =
-    //       getValueFromSearch(customerSearchResult, getBillToSelect);
-
-    //     billToValue(rec, addressee, totalAddress, city, state, zipcode);
-    //   } else {
-    //     billToValue(rec, "", "", "", "", "");
-    //   }
-    // }
   }
 
   /**
@@ -89,43 +59,37 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
    *
    * @since 2015.2
    */
+   var totalWeight = 0;
+   var totalCubage = 0;
 
   function sublistChanged(context) {
 
+    var currentrecord = context.currentRecord;
     var sublistIdItem = context.sublistId;
-    var sublists = [];
-    var totalWeight = 0;
-    var totalCubage = 0;
-    sublists.push(sublistIdItem);
-    // alert(sublists);
+    var getIndex = currentrecord.getCurrentSublistIndex({sublistId: sublistIdItem});
+ 
     var rec = currentRecord.get();
-    var sublistCount = sublists.length;
-    // alert(sublistCount);
-   
-    // getTotalDims(sublists, context);
+  
+      if(sublistIdItem == sublistIdItem){
 
-    for (var x = 0; x < sublistCount; x++) {
-      var sublist = sublists[x];
-      // log.debug({ title: "sublist", details: sublist });
-
-      var subLineCount = rec.getLineCount({ sublistId: sublist });
+      var subLineCount = rec.getLineCount({ sublistId: sublistIdItem });
       // log.debug({ title: "subLineCount", details: subLineCount });
 
       for (var y = 0; y < subLineCount; y++) {
         var mark = rec.getSublistValue({
-          sublistId: sublist,
+          sublistId: sublistIdItem,
           fieldId: "custpage_subitem_mark",
           line: y,
         });
         //alert('mark: ' + mark);
-        if (mark == true) {
+        if (mark == true && getIndex == y) {
           var weight = rec.getSublistValue({
-            sublistId: sublist,
+            sublistId: sublistIdItem,
             fieldId: "custpage_subitem_weight",
             line: y,
           });
           var cubage = rec.getSublistValue({
-            sublistId: sublist,
+            sublistId: sublistIdItem,
             fieldId: "custpage_subitem_totalcubage",
             line: y,
           });
@@ -136,21 +100,41 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
             totalCubage = parseFloat(totalCubage) + parseFloat(cubage);
           }
         }
+        else if(mark == false && getIndex == y){
+
+            var weight = rec.getSublistValue({
+              sublistId: sublistIdItem,
+              fieldId: "custpage_subitem_weight",
+              line: y,
+            });
+            var cubage = rec.getSublistValue({
+              sublistId: sublistIdItem,
+              fieldId: "custpage_subitem_totalcubage",
+              line: y,
+            });
+            if (!isNaN(parseFloat(weight, 2))) {
+              totalWeight = parseFloat(totalWeight) - parseFloat(weight);
+            }
+            if (!isNaN(parseFloat(cubage, 2))) {
+              totalCubage = parseFloat(totalCubage) - parseFloat(cubage);
+            }
+        }
       }
-    }
-    //alert('totalWeight: ' + totalWeight);
+          // alert('totalWeight: ' + totalWeight);
     rec.setValue({
       fieldId: "custpage_total_weight",
-      value: totalWeight.toFixed(2),
+      value: totalWeight.toFixed(2) || 0,
     });
     rec.setValue({
       fieldId: "custpage_total_cubage",
-      value: totalCubage.toFixed(2),
+      value: totalCubage.toFixed(2) || 0,
     });
+
+    }
   }
 
-  function fieldChanged(context) {
 
+  function fieldChanged(context) {
 
     var sublistFieldName = context.fieldId;
 
@@ -220,47 +204,100 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
     }
   }
 
+
+  function saverecord(context) {
+
+    var currentrecord = context.currentRecord;
+    var sublistIdItem = context.sublistId;
+    alert('sublistIdItem: ' + sublistIdItem);
+    var getsub = currentrecord.sublistId;
+    alert('getsub: ' + getsub);
+    var getMarkCheckvalue;
+
+    var rec = currentRecord.get();
+    var sublist = rec.sublistId;
+    alert('sublist: ' + sublist);
+  // alert('rec: ' + rec);
+    var getArrOfTab = rec.getValue({
+      fieldId: "custpage_mark_check_item",
+    });
+    // alert('getArrOfTab: ' + getArrOfTab);
+
+    // getMarkCheckvalue = allEqual(getArrOfTab);
+
+
+    return true;
+}
+
+function allEqual(getArrOfTab) {
+  return new Set(getArrOfTab).size == 1;
+}
+
+
+function refreshPage() {
+
+  var suiteletURL = url.resolveScript({
+    scriptId: 'customscript_gbs_consolidated_bol',
+    deploymentId: 'customdeploy_gbs_consolidated_bol',
+    returnExternalUrl: false,
+});
+
+  window.open(suiteletURL, "_self");
+
+}
+
   return {
     pageInit: pageInit,
     sublistChanged: sublistChanged,
     fieldChanged: fieldChanged,
+    // saveRecord: saverecord,
+    refreshPage: refreshPage,
+    
   };
 
+
+
   function billToValue(rec, addressee, totalAddress, city, state, zipcode) {
+    if(_logValidation(addressee)){
     rec.setValue({
       fieldId: "custpage_billtoname",
       value: addressee,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-
+  }
+    if(_logValidation(totalAddress)){
     rec.setValue({
       fieldId: "custpage_billtoaddress",
       value: totalAddress,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-
+  }
+    if(_logValidation(city)){
     rec.setValue({
       fieldId: "custpage_billtocity",
       value: city,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-
+  }
+    if(_logValidation(state)){
     rec.setValue({
       fieldId: "custpage_billtostate",
       value: state,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-
+  }
+    if(_logValidation(zipcode)){
     rec.setValue({
       fieldId: "custpage_billtozip",
       value: zipcode,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
+  }
   }
 
   function shipToSelectValue(
@@ -271,44 +308,46 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
     state,
     zipcode
   ) {
+    if(_logValidation(addressee)){
     rec.setValue({
       fieldId: "custpage_shiptoname",
       value: addressee || "",
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-    //}
-    //if(_logValidation(totalAddress)){
+    }
+    if(_logValidation(totalAddress)){
     rec.setValue({
       fieldId: "custpage_shiptoaddress",
       value: totalAddress,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-    //}
-    //if(_logValidation(city)){
+    }
+    if(_logValidation(city)){
     rec.setValue({
       fieldId: "custpage_shiptocity",
       value: city,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-    //}
-    //if(_logValidation(state)){
+    }
+    if(_logValidation(state)){
     rec.setValue({
       fieldId: "custpage_shiptostate",
       value: state,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
-    //}
-    //if(_logValidation(zipcode)){
+    }
+    if(_logValidation(zipcode)){
     rec.setValue({
       fieldId: "custpage_shiptozip",
       value: zipcode,
       ignoreFieldChange: true,
       forceSyncSourcing: true,
     });
+  }
   }
 
   function getValueFromSearch(customerSearchResult, getShipToSelect) {
@@ -365,15 +404,6 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
       fieldId: "custpage_bill_to_select",
     });
 
-    //  rec.setValue({
-    //     fieldId: "custpage_ship_to_select",
-    //     value: ''
-    //   });
-
-    // rec.setValue({
-    //     fieldId: "custpage_bill_to_select",
-    //     value: ''
-    //   });
     let fieldGetSelect = fieldShipToSelect.getSelectOptions();
     let fieldBillSelect = fieldBillToSelect.getSelectOptions();
 
@@ -389,23 +419,7 @@ define(["N/record", "N/search", "N/currentRecord", "N/url", "N/https"], /**
       });
     }
   }
-    //  fieldShipToSelect.removeSelectOption({
-    //    value: '',
-    //  });
 
-    //  fieldBillToSelect.removeSelectOption({
-    //   value: '',
-    // });
-
-    // fieldShipToSelect.insertSelectOption({
-    //   value: "",
-    //   text: "",
-    // });
-
-    // fieldBillToSelect.insertSelectOption({
-    //   value: "",
-    //   text: "",
-    // });
 
     if(_logValidation(customerSearchResult)){
 

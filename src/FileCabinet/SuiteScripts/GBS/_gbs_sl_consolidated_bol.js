@@ -4,6 +4,7 @@
  * @NModuleScope SameAccount
  */
 
+
 define([
   "N/record",
   "N/runtime",
@@ -13,12 +14,13 @@ define([
   "N/file",
   "N/xml",
   "N/url",
+  "N/ui/message",
 ], /**
  * @param {record} record
  * @param {runtime} runtime
  * @param {search} search
  * @param {serverWidget} serverWidget
- */ function (record, runtime, search, serverWidget, render, file, xml, url) {
+ */ function (record, runtime, search, serverWidget, render, file, xml, url, message) {
   /**
    * Definition of the Suitelet script trigger point.
    *
@@ -29,9 +31,7 @@ define([
    */
 
   var transRecType;
-  var transRecSearchType;
-  // var resultCommodity = [];
-
+  var markCheckArr = [];
 
   function onRequest(context) {
     try {
@@ -43,14 +43,10 @@ define([
         transRecType = "itemfulfillment";
       }
 
-      if (transRecType == "salesorder") {
-        transRecSearchType = "SalesOrd";
-      } else if (transRecType == "itemfulfillment") {
-        transRecSearchType = "ItemShip";
-      }
 
       var { request, parameters } = getParameters(context);
-      //log.debug('parameters.custpage_radiofield', parameters.custpage_radiofield);
+    
+      // log.debug('parameters.custpage_radiofield', parameters.custpage_radiofield);
       if (request.method == "GET") {
         context.response.writePage({
           pageObject: mainForm(context),
@@ -62,10 +58,15 @@ define([
           _logValidation(parameters.custpage_array_of_tabs)
         ) {
           var postDataCon = getSublistDataPDF(parameters, context, true);
-          //log.debug('postDataCon', postDataCon)
+          // log.debug('postDataCon', postDataCon)
+
           var URL = printBOLConsolidated(postDataCon, context);
           //log.debug('URL', URL)
+          if(_logValidation(URL) && _logValidation(context)){
           URL = renderConsolidatedPDFNum(URL, context, 1);
+          }
+
+          if(_logValidation(URL) && _logValidation(output)){
           context.response.write(
             `<html><head><script>window.open("${URL}")</script></head></html>`
           );
@@ -73,13 +74,35 @@ define([
           context.response.write(
             `<html><head><script>window.location.href = '${output}'</script></head></html>`
           );
+          }
+          else{
+            context.response.write(
+              `<html><head><script>window.location.href = '${output}'</script></head></html>`
+            );
+
+          //   var form = serverWidget.createForm({
+          //     title: "Consolidated BOL",
+          //   });
+       
+          //   var {
+          //     markCheckItem
+          //   } = addBodyFields(form);
+
+          // log.debug('markCheckArr', markCheckArr);
+          // markCheckItem.defaultValue = markCheckArr;
+          // log.debug('markCheckItem', markCheckItem);
+
+          }
         } else if (
           parameters.custpage_radiofield == "2" &&
           _logValidation(parameters.custpage_array_of_tabs)
         ) {
           var postDataSin = getSublistDataPDF(parameters, context, false);
           var URL = printBOLSinglePdf(postDataSin);
+          if(_logValidation(URL) && _logValidation(context)){
           URL = renderConsolidatedPDFNum(URL, context, 2);
+          }
+          if(_logValidation(URL) && _logValidation(output)){
           URL.forEach((x) => {
             context.response.write(
               `<html><head><script>window.open("${x}")</script></head></html>`
@@ -88,6 +111,12 @@ define([
           context.response.write(
             `<html><head><script>window.location.href = '${output}'</script></head></html>`
           );
+          }
+          else{
+            context.response.write(
+              `<html><head><script>window.location.href = '${output}'</script></head></html>`
+            );
+          }
         } else if (
           parameters.custpage_radiofield == "1" &&
           _logValidation(parameters.custpage_array_of_tabs)
@@ -98,17 +127,29 @@ define([
             postDataCon.markedDataConsolidateArr
           );
           var URL = printBOLSinglePdf(postDataSin);
+          if(_logValidation(URL) && _logValidation(context)){
           URL = renderConsolidatedPDFNum(URL, context, 1);
+          }
+          if(_logValidation(URL) && _logValidation(output)){
           context.response.write(
             `<html><head><script>window.open("${URL}")</script></head></html>`
           );
           context.response.write(
             `<html><head><script>window.location.href = '${output}'</script></head></html>`
           );
+          }
+          else{
+            context.response.write(
+              `<html><head><script>window.location.href = '${output}'</script></head></html>`
+            );
+          }
         } else {
+          if(_logValidation(context)){
+      
           context.response.writePage({
             pageObject: mainForm(context),
           });
+        }
         }
       }
     } catch (e) {
@@ -136,15 +177,18 @@ define([
     });
 
     output = "https://" + output + suiteletURL;
+
     return output;
   }
 
+ 
   function getSublistDataPDF(parameters, context, consolidated) {
     var totalWeight = 0;
     var totalCubage = 0;
     var masterData = {};
     var markedDataConsolidateArr = [];
     var markedDataSinglePDFArr = [];
+   
 
     var arrayOfTabs = JSON.parse(parameters.custpage_array_of_tabs);
 
@@ -154,13 +198,14 @@ define([
       var subLineCount = context.request.getLineCount({
         group: sublist,
       });
-
+    
       for (var y = 0; y < subLineCount; y++) {
         var mark = context.request.getSublistValue({
           group: sublist,
           name: "custpage_subitem_mark",
           line: y,
         });
+       markCheckArr.push(mark);
         if (mark == "T") {
           markedDataConsolidateArr.push({
             isConsolidated: true,
@@ -225,11 +270,17 @@ define([
               name: "custpage_subitem_pallet",
               line: y,
             }),
-            custpage_subitem_cases: context.request.getSublistValue({
+            custpage_subitem_unitabbreviation: context.request.getSublistValue({
               group: sublist,
-              name: "custpage_subitem_cases",
+              name: "custpage_subitem_unitabbreviation",
               line: y,
             }),
+            custpage_subitem_hazmatgood: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_hazmatgood",
+              line: y,
+            }),
+          
 
           });
 
@@ -294,11 +345,17 @@ define([
               name: "custpage_subitem_pallet",
               line: y,
             }),
-            custpage_subitem_cases: context.request.getSublistValue({
+            custpage_subitem_unitabbreviation: context.request.getSublistValue({
               group: sublist,
-              name: "custpage_subitem_cases",
+              name: "custpage_subitem_unitabbreviation",
               line: y,
             }),
+            custpage_subitem_hazmatgood: context.request.getSublistValue({
+              group: sublist,
+              name: "custpage_subitem_hazmatgood",
+              line: y,
+            }),
+        
           });
           
           var weight = context.request.getSublistValue({
@@ -363,7 +420,9 @@ define([
     masterData.billToCity = parameters.custpage_billtocity;
     masterData.billToState = parameters.custpage_billtostate;
     masterData.billToZip = parameters.custpage_billtozip;
+    masterData.markCheckArr = markCheckArr;
 
+    // log.debug("masterData", masterData);
     return masterData;
   }
   function renderConsolidatedPDFNum(pdf, context, num) {
@@ -439,17 +498,18 @@ define([
     var request = context.request;
     //log.debug("request", request);
     var parameters = context.request.parameters;
-    //log.debug("parameters", parameters);
+    // log.debug("parameters", parameters);
     return {
       request,
       parameters,
+
     };
   }
 
   function mainForm(context) {
     try {
       var parameters = context.request.parameters;
-      //log.debug({ title: "parameters", details: parameters });
+      // log.debug({ title: "parameters", details: parameters });
       var sublistData = getSublistData(context);
       //log.debug({ title: "sublistData", details: sublistData });
       
@@ -458,17 +518,20 @@ define([
         custpage_enddate: parameters.custpage_enddate,
         custpage_customer: parameters.custpage_customer,
         custpage_total_cubage: parameters.custpage_cubage,
-        custpage_total_weight: parameters.custpage_total_weight,
+        // custpage_total_weight: parameters.custpage_total_weight,
         custpage_carrier_ship: parameters.custpage_carrier_ship,
         custpage_transaction_type: parameters.custpage_transaction_type,
         custpage_ship_to_select: parameters.custpage_ship_to_select,
       };
+
+      // log.debug('checkarr', defaultValues);
 
       var form = serverWidget.createForm({
         title: "Consolidated BOL",
       });
       form.clientScriptModulePath =
         "SuiteScripts/GBS/_gbs_cs_consolidated_bol.js";
+
 
       var {
         arrayoftabs,
@@ -503,12 +566,19 @@ define([
         transType,
         shipToSelectHidden,
         billToSelectHidden,
+        markCheckItem
       } = addBodyFields(form);
 
       form.addSubmitButton({
         label: "Submit",
       });
-
+  
+      form.addButton({
+        id: "custpage_refresh",
+        label: "Refresh",
+        functionName: "refreshPage()"
+      });
+  
       form.updateDefaultValues(defaultValues);
 
       if (context.request.method != "GET") {
@@ -533,9 +603,12 @@ define([
             addTabbedSublist(form, formatted)
           );
         }
+
         shipFromLocation(parameters, shipFrom, location);
 
       }
+
+
 
       billToAddressSelect(
         parameters,
@@ -573,7 +646,7 @@ define([
         carrier,
         sealNumber,
         trailerNumber,
-        specialInstructions
+        specialInstructions,  
       );
       return form;
     } catch (e) {
@@ -581,7 +654,9 @@ define([
     }
   }
 
+
   function addBodyFields(form) {
+
     form.addFieldGroup({
       id: "custpage_fg_1",
       label: "Filters",
@@ -940,7 +1015,16 @@ define([
       container: "custpage_fg_3",
     });
 
-   
+    var markCheckItem = form.addField({
+      id: "custpage_mark_check_item",
+      type: serverWidget.FieldType.TEXTAREA,
+      label: "Mark Check Item",
+      container: "custpage_fg_3",
+    });
+
+    markCheckItem.updateDisplayType({
+      displayType: serverWidget.FieldDisplayType.HIDDEN,
+    });
 
     return {
       arrayoftabs,
@@ -975,6 +1059,7 @@ define([
       transType,
       shipToSelectHidden,
       billToSelectHidden,
+      markCheckItem
     };
   }
 
@@ -1018,6 +1103,8 @@ define([
     if (billToZipValue) {
       billToZip.defaultValue = billToZipValue;
     }
+
+  
   }
 
   function addSpsFields(
@@ -1032,7 +1119,8 @@ define([
     carrier,
     sealNumber,
     trailerNumber,
-    specialInstructions
+    specialInstructions,
+    
   ) {
     let proNumberValue = parameters.custpage_pro_number;
     let scacValue = parameters.custpage_scac;
@@ -1160,7 +1248,7 @@ define([
     }
   }
 
-  function shipFromLocation(parameters, shipFrom, location) {
+  function shipFromLocation(parameters, shipFrom, location,) {
     // let cusbageCalculationValue = parameters.custpage_cubage_calculation;
 
     // if (cusbageCalculationValue) {
@@ -1236,7 +1324,7 @@ define([
       var spsDataArr = [];
       let markedDataArr = markedData.markedDataConsolidateArr;
       // log.debug("markedDataArr", markedDataArr);
-  
+      if(_logValidation(markedDataArr)){
       var totalPkgCount = 0;
       let {
         addresseeNameOnSubRecord,
@@ -1256,7 +1344,7 @@ define([
       fields["conBolNumber"] = conbolNumber;
      
 
-      ({ shipToLocationNum, bolNumber, totalPkgCount,resultCommodity,commodityArr } = processLineLevelData(
+      ({ shipToLocationNum, bolNumber, totalPkgCount,resultCommodity,commodityArr, totalPkgCount, totalWeightOrder } = processLineLevelData(
         markedDataArr,
         spsDataArr,
         conbolNumber,
@@ -1281,12 +1369,16 @@ define([
         markedData,
         markedDataArr,
         spsDataArr,
-        shipToLocationNum
+        shipToLocationNum,
+        totalPkgCount,
+        totalWeightOrder,
+    
       );
       //log.debug({ title: "json", details: json });
       arrayOfURL.push(json);
-      //log.debug({ title: "arrayOfURL consolidated", details: arrayOfURL });
+      // log.debug({ title: "arrayOfURL consolidated", details: arrayOfURL });
       return arrayOfURL;
+      }
     } catch (e) {
       log.debug("error in printBOLConsolidated", e.toString());
     }
@@ -1297,6 +1389,8 @@ define([
       // log.debug("markedData", markedData);
       var arrayOfURL = [];
       var count = 0;
+      let val = markedData.markedDataSinglePDFArr;
+      if(_logValidation(val)){
       let {
         addresseeNameOnSubRecord,
         addreesOnSubRecord,
@@ -1305,7 +1399,7 @@ define([
         zipOnSubRecord,
         phoneOnSubRecord,
       } = shipAddressLocation(markedData);
-      let val = markedData.markedDataSinglePDFArr;
+      
       // log.debug("val", val);
       for (var x of val) {
         // log.debug({ title: "x", details: x });
@@ -1324,7 +1418,7 @@ define([
           fields["isConsolidatedpresent"] = true;
           fields["conBolNumber"] = conbolNumber;
 
-          ({ shipToLocationNum, bolNumber, resultCommodity,commodityArr } =
+          ({ shipToLocationNum, bolNumber, resultCommodity,commodityArr, totalPkgCount, totalWeightOrder } =
             processLineLevelData(
               x,
               spsDataArr,
@@ -1342,7 +1436,7 @@ define([
           // );
           standaloneBOLNum = "";
           fields["singleBolNumber"] = standaloneBOLNum;
-          ({ shipToLocationNum, bolNumber, resultCommodity,commodityArr } =
+          ({ shipToLocationNum, bolNumber, resultCommodity,commodityArr, totalPkgCount, totalWeightOrder } =
             processLineLevelData(
               x,
               spsDataArr,
@@ -1366,7 +1460,8 @@ define([
           x,
           spsDataArr,
           shipToLocationNum,
-          commodityArr
+          totalPkgCount,
+          totalWeightOrder,
         );
         // log.debug({ title: "printBOL JSON", details: json });
         arrayOfURL.push(json);
@@ -1374,6 +1469,7 @@ define([
       }
       // log.debug({ title: "arrayOfURL standalone", details: arrayOfURL });
       return arrayOfURL;
+    }
     } catch (e) {
       log.debug("error in printBOLSinglePdf", e.toString());
     }
@@ -1389,19 +1485,21 @@ define([
   ) {
     //log.debug("Start processLineLevelData...");
     // log.debug("x", x);
-   
+    var totalPkgCount = 0;
+    var totalWeightOrder= 0;
+
     ({resultCommodity,commodityArr} = carrierInfoCommodity(x));
 
     for (let f = 0; f < x.length; f++) {
       let itemFullId = x[f].custpage_subitem_itemid;
       // log.debug("itemFullId", itemFullId);
 
-      let itemWeight = parseFloat(x[f].custpage_subitem_weight);
+      let itemWeight = parseFloat(x[f].custpage_subitem_weight) || 0;
       // log.debug(`itemWeight ${itemFullId}`, itemWeight);
-      itemWeight = parseFloat(itemWeight.toFixed(2));
+      itemWeight = parseFloat(itemWeight.toFixed(2)) ;
 
     
-      let getPkgCount = parseFloat(x[f].custpage_subitem_cases);
+      let getPkgCount = parseFloat(x[f].custpage_subitem_quantity) || 0;
       // log.debug('getPkgCount', getPkgCount);
 
       var found = spsDataArr.findIndex(function (element) {
@@ -1483,6 +1581,12 @@ define([
         let department = getSpsValues.custbody_sps_department;
         // log.debug("department", department);
 
+        totalPkgCount = parseFloat(totalPkgCount) + parseFloat(getPkgCount) || 0;
+        // log.debug("totalPkgCount", totalPkgCount);
+
+        totalWeightOrder = parseFloat(totalWeightOrder) + parseFloat(itemWeight) || 0;
+        // log.debug("totalWeightOrder", totalWeightOrder);
+
         spsDataArr.push({
           poNumber: poNumber,
           poType: poType,
@@ -1501,13 +1605,20 @@ define([
 
         let objPkg = spsDataArr[found];
         objPkg.getPkgCount = parseFloat(objPkg.getPkgCount) + parseFloat(getPkgCount);
-        x[found].custpage_subitem_cases = objPkg.getPkgCount;
+        x[found].custpage_subitem_quantity = objPkg.getPkgCount || 0;
+
+        
+        totalPkgCount = parseFloat(totalPkgCount) + parseFloat(getPkgCount) || 0;
+        // log.debug("totalPkgCount in else", totalPkgCount);
+
+        totalWeightOrder = parseFloat(totalWeightOrder) + parseFloat(itemWeight) || 0;
+        // log.debug("totalWeightOrder in else", totalWeightOrder);
 
       }
     }
    
     //log.debug("End processLineLevelData...");
-    return { shipToLocationNum, bolNumber, resultCommodity,commodityArr };
+    return { shipToLocationNum, bolNumber, resultCommodity,commodityArr, totalPkgCount, totalWeightOrder };
   }
 
   function carrierInfoCommodity(x){
@@ -1516,17 +1627,21 @@ define([
 
     for (let i = 0; i < x.length; i++) {
      
-      let nmfcComm = x[i].custpage_subitem_nmfc || "";
+      let nmfcComm = x[i].custpage_subitem_nmfc || 0;
       // log.debug("nmfcComm", nmfcComm);
       let commodityInfo = x[i].custpage_subitem_commodityinfo || "";
 
-      let freightClassComm = x[i].custpage_subitem_freightclass || "";
+      let freightClassComm = x[i].custpage_subitem_freightclass || 0;
 
-      let palletComm = x[i].custpage_subitem_pallet || "";
+      let palletComm = x[i].custpage_subitem_pallet || 0;
 
-      let casesComm = x[i].custpage_subitem_cases || "";
+      let casesComm = x[i].custpage_subitem_quantity || 0;
 
-      let itemWeightComm = x[i].custpage_subitem_weight || "";
+      let itemWeightComm = x[i].custpage_subitem_weight || 0;
+
+      let itemUnit = x[i].custpage_subitem_unitabbreviation || "";
+
+      let itemHazmatGood = x[i].custpage_subitem_hazmatgood || "";
 
 
       let commodityObj = {
@@ -1536,6 +1651,8 @@ define([
         palletComm: parseFloat(palletComm) || 0,
         casesComm: parseFloat(casesComm) || 0,
         itemWeightComm: parseFloat(itemWeightComm) || 0,
+        itemUnit: itemUnit || "",
+        itemHazmatGood: itemHazmatGood || "",
       };
       commodityArr.push(commodityObj);
   }
@@ -1543,12 +1660,12 @@ define([
     var resultCommodity = [];
   commodityArr.reduce(function(res, value) {
   if (!res[value.commodityInfo]) {
-    res[value.commodityInfo] = { commodityInfo: value.commodityInfo, nmfcComm: value.nmfcComm, freightClassComm: value.freightClassComm, palletComm: 0, casesComm: 0, itemWeightComm: 0 };
+    res[value.commodityInfo] = { commodityInfo: value.commodityInfo, nmfcComm: value.nmfcComm, freightClassComm: value.freightClassComm, palletComm: 0, casesComm: 0, itemWeightComm: 0, itemUnit: value.itemUnit, itemHazmatGood: value.itemHazmatGood };
     resultCommodity.push(res[value.commodityInfo])
   }
-  res[value.commodityInfo].palletComm += value.palletComm;
-  res[value.commodityInfo].casesComm += value.casesComm;
-  res[value.commodityInfo].itemWeightComm += value.itemWeightComm;
+  res[value.commodityInfo].palletComm += value.palletComm || 0;
+  res[value.commodityInfo].casesComm += value.casesComm || 0;
+  res[value.commodityInfo].itemWeightComm += value.itemWeightComm || 0;
   return res;
 }, {});
 
@@ -1571,7 +1688,8 @@ define([
     x,
     spsDataArr,
     shipToLocationNum,
-    commodityArr
+    totalPkgCount,
+    totalWeightOrder,
   ) {
     fields["tranid"] = 10001;
     fields["shipmethod"] = markedData.carrier;
@@ -1610,105 +1728,16 @@ define([
     fields["billToZip"] = markedData.billToZip;
     fields["items"] = x[0];
     fields["spsData"] = spsDataArr;
+    fields["totalPkgCount"] = totalPkgCount;
+    fields["totalWeightOrder"] = totalWeightOrder;
+ 
     // fields['commodity'] = commodityArr;
     var json = { record: fields };
     // log.debug("json", json);
     return json;
   }
 
-  function getSpsDataIF(
-    itemFullId,
-    totalPkgCount,
-    spsDataArr,
-    fields,
-    markedData,
-    itemWeight
-  ) {
-    let getSpsValues = search.lookupFields({
-      type: transRecType,
-      id: itemFullId,
-      columns: [
-        "custbody_sps_z7_addresslocationnumber",
-        "custbody_sps_masterbilloflading",
-        "custbody_sps_ponum_from_salesorder",
-        "custbody_sps_potype",
-        "custbody_sps_department",
-      ],
-    });
-
-    // log.debug('getSpsValues', getSpsValues);
-    var shipToLocationNum = getSpsValues.custbody_sps_z7_addresslocationnumber;
-
-    var bolNumber = getSpsValues.custbody_sps_masterbilloflading;
-
-    let poNumber = getSpsValues.custbody_sps_ponum_from_salesorder;
-    // log.debug('poNumber', poNumber);
-    let loadItemFullRecord = record.load({
-      type: transRecType,
-      id: itemFullId,
-    });
-
-    let getPkgCount = loadItemFullRecord.getLineCount({
-      sublistId: "package",
-    });
-    // log.debug('getPkgCount', getPkgCount);
-    let poType = getSpsValues.custbody_sps_potype;
-    // log.debug("poType", poType);
-    let department = getSpsValues.custbody_sps_department;
-    // log.debug("department", department);
-    totalPkgCount = totalPkgCount + getPkgCount;
-    fields["totalPkgCount"] = totalPkgCount;
-
-    totalPkgCount = spsDataArrPush(
-      spsDataArr,
-      itemFullId,
-      poNumber,
-      poType,
-      department,
-      getPkgCount,
-      totalPkgCount,
-      markedData,
-      itemWeight
-    );
-    return { shipToLocationNum, bolNumber, totalPkgCount };
-  }
-
-  function spsDataArrPush(
-    spsDataArr,
-    itemFullId,
-    poNumber,
-    poType,
-    department,
-    getPkgCount,
-    totalPkgCount,
-    markedData,
-    itemWeight
-  ) {
-    var found = spsDataArr.findIndex(function (element) {
-      return element.itemFullId == itemFullId;
-    });
-    //log.debug("found", found);
-
-    if (found == -1) {
-      spsDataArr.push({
-        poNumber: poNumber,
-        poType: poType,
-        department: department,
-        getPkgCount: getPkgCount,
-        // pallets: markedData.palletValue,
-        itemFullId: itemFullId,
-        itemWeight: itemWeight,
-      });
-      totalPkgCount = totalPkgCount + getPkgCount;
-    } else {
-      let obj = spsDataArr[found];
-      obj.itemWeight = parseFloat(obj.itemWeight) + parseFloat(itemWeight);
-    }
-
-    //log.debug("spsDataArr", spsDataArr);
-    return totalPkgCount;
-  }
-
+ 
   function getSublistData(context, sublistList) {
     //log.debug({title: 'getSublistData Started...'});
     if (!sublistList) {
@@ -1912,7 +1941,14 @@ define([
     columns.push(search.createColumn({ name: "item", label: "item" }));
 
     columns.push(search.createColumn({ name: "custcol_gbs_if_so_pallet", label: "Pallet" }));
-    columns.push(search.createColumn({ name: "custcol_gbs_if_so_cases", label: "Cases" }));
+
+    columns.push(search.createColumn({name: "unitabbreviation", label: "Units"}));
+
+   columns.push(search.createColumn({
+      name: "formulatext",
+      formula: "{item.custitem_hazmat_good_hide}",
+      label: "Formula (Text)"
+   }));
 
     columns.push(
       search.createColumn({
@@ -2068,7 +2104,8 @@ define([
             itemObj["cubage"] = jsonRow.cubage;
             itemObj["totalcubage"] = jsonRow.totalcubage;
             itemObj["pallet"] = jsonRow.Pallet;
-            itemObj["cases"] = jsonRow.Cases;
+            itemObj["unitabbreviation"] = jsonRow.Units;
+            itemObj["hazmatgood"] = jsonRow['Formula (Text)'];
             items.push(itemObj);
           }
         }
@@ -2178,13 +2215,6 @@ define([
         });
       }
     }
-    // var getComm = sublist.getField({
-    //   id: "custpage_subitem_commodityinfo",
-    //   line: 0,
-    // });
-    // getComm.updateDisplayType({
-    //   displayType: serverWidget.FieldDisplayType.HIDDEN,
-    // });
 
     let hidePallet = sublist.getField({
       id: "custpage_subitem_pallet",
@@ -2194,11 +2224,19 @@ define([
       displayType: serverWidget.FieldDisplayType.HIDDEN,
     });
 
-    let hideCases = sublist.getField({
-      id: "custpage_subitem_cases",
+    let unitabbreviation = sublist.getField({
+      id: "custpage_subitem_unitabbreviation",
       line: 0,
     });
-    hideCases.updateDisplayType({
+    unitabbreviation.updateDisplayType({
+      displayType: serverWidget.FieldDisplayType.HIDDEN,
+    });
+
+    let hazmatgood = sublist.getField({
+      id: "custpage_subitem_hazmatgood",
+      line: 0,
+    });
+    hazmatgood.updateDisplayType({
       displayType: serverWidget.FieldDisplayType.HIDDEN,
     });
 
