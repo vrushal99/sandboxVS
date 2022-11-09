@@ -395,8 +395,12 @@ define([
         totalCubage: totalCubage.toFixed(2),
       };
     }
+
+
+    // log.debug('shipFromName in pdf',parameters.custpage_shipfrom_name);
     masterData.customer = parameters.custpage_customer;
     masterData.carrier = parameters.custpage_carrier_ship;
+    masterData.shipFromName = parameters.custpage_shipfrom_name;
     masterData.frieghtChargeTerms = parameters.custpage_fright_charge_terms;
     masterData.shipTofobVal = parameters.custpage_shiptofob;
     masterData.shipFromfobVal = parameters.custpage_shipfrom_fob;
@@ -520,6 +524,7 @@ define([
         custpage_total_cubage: parameters.custpage_cubage,
         // custpage_total_weight: parameters.custpage_total_weight,
         custpage_carrier_ship: parameters.custpage_carrier_ship,
+        custpage_shipfrom_name: parameters.custpage_shipfrom_name,
         custpage_transaction_type: parameters.custpage_transaction_type,
         custpage_ship_to_select: parameters.custpage_ship_to_select,
       };
@@ -536,6 +541,7 @@ define([
       var {
         arrayoftabs,
         shipFrom,
+        shipFromName,
         location,
         proNumber,
         scac,
@@ -647,7 +653,10 @@ define([
         sealNumber,
         trailerNumber,
         specialInstructions,  
+        shipFromName
       );
+
+   
       return form;
     } catch (e) {
       log.debug("error in mainForm", e.toString());
@@ -767,6 +776,19 @@ define([
       type: serverWidget.FieldType.LONGTEXT,
       label: "Ship From",
       container: "custpage_fg_1",
+    });
+
+    var shipFromName = form.addField({
+      id: "custpage_shipfrom_name",
+      type: serverWidget.FieldType.SELECT,
+      label: "Ship From Name",
+      // source: "customlist_jil_ship_from_name",
+      container: "custpage_fg_1",
+    });
+
+    shipFromName.addSelectOption({
+      value: "",
+      text: "",
     });
 
     var shipFromfob = form.addField({
@@ -1029,6 +1051,7 @@ define([
     return {
       arrayoftabs,
       shipFrom,
+      shipFromName,
       location,
       proNumber,
       scac,
@@ -1120,7 +1143,7 @@ define([
     sealNumber,
     trailerNumber,
     specialInstructions,
-    
+    shipFromName
   ) {
     let proNumberValue = parameters.custpage_pro_number;
     let scacValue = parameters.custpage_scac;
@@ -1133,6 +1156,8 @@ define([
     let trailerNumberVal = parameters.custpage_trailer_number;
     let specialInstructionsVal = parameters.custpage_special_instructions;
 
+
+  
     if (sealNumberVal) {
       sealNumber.defaultValue = sealNumberVal;
     }
@@ -1165,6 +1190,32 @@ define([
     // if (pallets) {
     //   pallets.defaultValue = palletsValue;
     // }
+
+    var searchOnShipFromNameList = search.create({
+      type: "customlist_jil_ship_from_name",
+      filters:
+      [
+         ["isinactive","is","F"]
+      ],
+      columns:
+      [
+         search.createColumn({
+            name: "name",
+            sort: search.Sort.ASC,
+            label: "Name"
+         })
+      ]
+   });
+
+   var searchOnShipFromNameListResults = searchOnShipFromNameList.run().getRange(0, 1000);
+
+   for (let i = 0; i < searchOnShipFromNameListResults.length; i++) {
+    shipFromName.addSelectOption({
+      value: searchOnShipFromNameListResults[i].getValue({ name: "name" }),
+      text: searchOnShipFromNameListResults[i].getValue({ name: "name" }),
+    });
+  }
+
 
     var shipitemSearchObj = search.create({
       type: "shipitem",
@@ -1274,7 +1325,7 @@ define([
     }
   }
 
-  function shipAddressLocation(markedData) {
+  function shipAddressLocation(markedData, form) {
     try {
       if (_logValidation(markedData.location)) {
         var getShipFromLocation = record.load({
@@ -1517,8 +1568,9 @@ define([
             "custbody_sps_z7_addresslocationnumber",
             "custbody_sps_masterbilloflading",
             "custbody_sps_ponum_from_salesorder",
-            "custbody_sps_potype",
-            "custbody_sps_department",
+            "custbody_jil_cust_po_num"
+            // "custbody_sps_potype",
+            // "custbody_sps_department",
           ],
         });
 
@@ -1533,13 +1585,14 @@ define([
           columns: [
             "custbody_sps_z7_addresslocationnumber",
             "custbody_sps_masterbilloflading",
-            "otherrefnum",
-            "custbody_sps_potype",
-            "custbody_sps_department",
+            "tranid",
+            "custbody_jil_cust_po_num"
+            // "custbody_sps_potype",
+            // "custbody_sps_department",
           ],
         });
 
-        var poNumber = getSpsValues.otherrefnum;
+        var poNumber = getSpsValues.tranid;
         fields["poNumber"] = poNumber;
         // log.debug('poNumber', poNumber);
       }
@@ -1575,10 +1628,10 @@ define([
 
         var bolNumber = getSpsValues.custbody_sps_masterbilloflading;
 
-        let poType = getSpsValues.custbody_sps_potype;
+        // let poType = getSpsValues.custbody_sps_potype;
         // log.debug("poType", poType);
-
-        let department = getSpsValues.custbody_sps_department;
+        let poType = getSpsValues.custbody_jil_cust_po_num;
+        // let department = getSpsValues.custbody_sps_department;
         // log.debug("department", department);
 
         totalPkgCount = parseFloat(totalPkgCount) + parseFloat(getPkgCount) || 0;
@@ -1590,7 +1643,7 @@ define([
         spsDataArr.push({
           poNumber: poNumber,
           poType: poType,
-          department: department,
+          // department: department,
           getPkgCount: getPkgCount || 0,
           // pallets: markedData.palletValue || 0,
           itemFullId: itemFullId,
@@ -1691,9 +1744,11 @@ define([
     totalPkgCount,
     totalWeightOrder,
   ) {
+    // log.debug('markddata',markedData)
     fields["tranid"] = 10001;
     fields["shipmethod"] = markedData.carrier;
     fields["frieghtChargeTerms"] = markedData.frieghtChargeTerms;
+    fields["shipattentionname"] = markedData.shipFromName;
     fields["shipattention"] = addresseeNameOnSubRecord;
     fields["shipTofobVal"] = markedData.shipTofobVal;
     fields["shipFromfobVal"] = markedData.shipFromfobVal;

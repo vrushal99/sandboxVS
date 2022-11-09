@@ -1,0 +1,31 @@
+<suitelet scriptid="customscript_gbs_consolidated_bol">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>GBS | Consolidated BOL</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/GBS/_gbs_sl_consolidated_bol.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_gbs_consolidated_bol">
+      <allemployees>F</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>T</allroles>
+      <audslctrole></audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>RELEASED</status>
+      <title>GBS | Consolidated BOL</title>
+      <links>
+        <link>
+          <linkcategory>BASICTRANSACTIONSORDERMANAGEMENT</linkcategory>
+          <linklabel>Consolidated BOL</linklabel>
+        </link>
+      </links>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>

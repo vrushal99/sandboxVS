@@ -101,7 +101,7 @@
                         <td>
                             <table width="100%" style="margin:0px;">
                                 <tr>
-                                    <td width="80%" padding-top="0px">Name: ${record.shipattention} </td>
+                                    <td width="80%" padding-top="0px">Name: ${record.shipattentionname} </td>
                                 </tr>
                                 <tr>
                                    <#if record.shipattention?has_content>
